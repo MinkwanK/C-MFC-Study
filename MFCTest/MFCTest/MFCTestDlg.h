@@ -42,4 +42,13 @@ public:
 	void Thread3();
 	CProgressCtrl m_progress3;
 	afx_msg void OnBnClickedButton3();
+	CStatic m_pic;
+	afx_msg void OnBnClickedButtonBitblt();
+	char* m_pData;
+	BITMAPFILEHEADER m_bitFileHeader;
+	BITMAPINFOHEADER m_bitInfoHeader;
+
+	int m_iDrawMode;
+
+	afx_msg void OnBnClickedButtonStretch();
 };

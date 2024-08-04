@@ -54,6 +54,7 @@ CMFCTestDlg::CMFCTestDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFCTEST_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_pData = nullptr;
 }
 
 void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
@@ -62,6 +63,7 @@ void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PROGRESS1, m_progress);
 	DDX_Control(pDX, IDC_PROGRESS2, m_progress2);
 	DDX_Control(pDX, IDC_PROGRESS3, m_progress3);
+	DDX_Control(pDX, IDC_STATIC_Pic, m_pic);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
@@ -71,6 +73,8 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON1, &CMFCTestDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMFCTestDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON3, &CMFCTestDlg::OnBnClickedButton3)
+	ON_BN_CLICKED(IDC_BUTTON_BitBlt, &CMFCTestDlg::OnBnClickedButtonBitblt)
+	ON_BN_CLICKED(IDC_BUTTON_Stretch, &CMFCTestDlg::OnBnClickedButtonStretch)
 END_MESSAGE_MAP()
 
 
@@ -152,7 +156,49 @@ void CMFCTestDlg::OnPaint()
 	}
 	else
 	{
-		CDialogEx::OnPaint();
+		CRect rcClient;
+		GetClientRect(&rcClient);
+
+		CRect rcPic;
+		m_pic.GetWindowRect(&rcPic);
+		ScreenToClient(&rcPic);
+
+		CPaintDC dc(this);
+		CDC* pMemDC;
+		CBitmap* pOldBitmap;
+		pMemDC = new CDC;
+		pMemDC->CreateCompatibleDC(&dc);
+		CBitmap bitmap;
+		bitmap.CreateCompatibleBitmap(&dc, rcClient.Width(), rcClient.Height());
+		pOldBitmap = pMemDC->SelectObject(&bitmap);
+		bitmap.DeleteObject();
+		pMemDC->SetBkMode(TRANSPARENT);
+		pMemDC->SetStretchBltMode(COLORONCOLOR);
+		pMemDC->FillSolidRect(&rcClient, RGB(0, 0, 0));
+
+		if (m_pData)
+		{
+			BITMAPINFO bitInfo;
+			bitInfo.bmiHeader = m_bitInfoHeader;
+
+			SetStretchBltMode(pMemDC->GetSafeHdc(), COLORONCOLOR);  // set iMode.
+			StretchDIBits(pMemDC->GetSafeHdc(), rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(),
+				0, 0, bitInfo.bmiHeader.biWidth, bitInfo.bmiHeader.biHeight, m_pData, &bitInfo, DIB_RGB_COLORS, SRCCOPY);
+			
+
+
+		}
+
+		if (m_iDrawMode == 0)
+		{
+			dc.BitBlt(rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(), pMemDC, rcPic.left,rcPic.top, SRCCOPY);
+		}
+		else if(m_iDrawMode == 1)
+		{
+			dc.StretchBlt(rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(), pMemDC, rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(), SRCCOPY);
+		}
+		
+
 	}
 }
 
@@ -169,6 +215,7 @@ void CMFCTestDlg::OnBnClickedButton1()
 {
 	std::thread t1(&CMFCTestDlg::Thread1, this);
 	t1.detach();
+
 }
 
 
@@ -228,3 +275,55 @@ void CMFCTestDlg::Thread3()
 }
 
 
+
+
+void CMFCTestDlg::OnBnClickedButtonBitblt()
+{
+	CFile file;
+	if (file.Open(_T("test.bmp"), CFile::modeRead))
+	{
+		if (m_pData != nullptr)
+		{
+			delete[] m_pData;
+			m_pData = nullptr;
+		}
+		
+		file.Read(&m_bitFileHeader, sizeof(BITMAPFILEHEADER));
+		file.Read(&m_bitInfoHeader, sizeof(BITMAPINFOHEADER));
+
+		int iBmpSize = m_bitFileHeader.bfSize - m_bitFileHeader.bfOffBits;
+		m_pData = new char[iBmpSize];
+		file.Seek(m_bitFileHeader.bfOffBits, CFile::begin);
+		file.Read(m_pData, iBmpSize);
+		file.Close();
+		Invalidate();
+	}
+
+	m_iDrawMode = 0;
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonStretch()
+{
+	CFile file;
+	if (file.Open(_T("test.bmp"), CFile::modeRead))
+	{
+		if (m_pData != nullptr)
+		{
+			delete[] m_pData;
+			m_pData = nullptr;
+		}
+
+		file.Read(&m_bitFileHeader, sizeof(BITMAPFILEHEADER));
+		file.Read(&m_bitInfoHeader, sizeof(BITMAPINFOHEADER));
+
+		int iBmpSize = m_bitFileHeader.bfSize - m_bitFileHeader.bfOffBits;
+		m_pData = new char[iBmpSize];
+		file.Seek(m_bitFileHeader.bfOffBits, CFile::begin);
+		file.Read(m_pData, iBmpSize);
+		file.Close();
+		Invalidate();
+	}
+
+	m_iDrawMode = 1;
+}
