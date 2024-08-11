@@ -45,10 +45,13 @@ public:
 	CStatic m_pic;
 	afx_msg void OnBnClickedButtonBitblt();
 	char* m_pData;
+	int m_iHeight;
+	int m_iWidth;
 	BITMAPFILEHEADER m_bitFileHeader;
 	BITMAPINFOHEADER m_bitInfoHeader;
 
 	int m_iDrawMode;
 
 	afx_msg void OnBnClickedButtonStretch();
+	CStatic m_pic2;
 };

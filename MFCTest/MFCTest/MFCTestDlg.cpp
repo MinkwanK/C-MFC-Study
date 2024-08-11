@@ -64,6 +64,7 @@ void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PROGRESS2, m_progress2);
 	DDX_Control(pDX, IDC_PROGRESS3, m_progress3);
 	DDX_Control(pDX, IDC_STATIC_Pic, m_pic);
+	DDX_Control(pDX, IDC_STATIC_Pic2, m_pic2);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
@@ -174,7 +175,7 @@ void CMFCTestDlg::OnPaint()
 		bitmap.DeleteObject();
 		pMemDC->SetBkMode(TRANSPARENT);
 		pMemDC->SetStretchBltMode(COLORONCOLOR);
-		pMemDC->FillSolidRect(&rcClient, RGB(0, 0, 0));
+		pMemDC->FillSolidRect(&rcClient, RGB(255, 255, 255));
 
 		if (m_pData)
 		{
@@ -184,20 +185,67 @@ void CMFCTestDlg::OnPaint()
 			SetStretchBltMode(pMemDC->GetSafeHdc(), COLORONCOLOR);  // set iMode.
 			StretchDIBits(pMemDC->GetSafeHdc(), rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(),
 				0, 0, bitInfo.bmiHeader.biWidth, bitInfo.bmiHeader.biHeight, m_pData, &bitInfo, DIB_RGB_COLORS, SRCCOPY);
+
+			//원본 이미지에서 이만큼을 자르고 싶다는 의미. 
+			CRect rcCrop(250, 250, 500, 500);
+
+			float fWidthRatio = (float)rcPic.Width() / (float)m_iWidth;
+			float fHeightRatio = (float)rcPic.Height() / (float)m_iHeight;
+
+			CRect rcCrop2;
+			rcCrop2.left = rcPic.left + rcCrop.left * fWidthRatio;
+			rcCrop2.right = rcPic.left + rcCrop.right * fWidthRatio;
+			rcCrop2.top = rcPic.top + rcCrop.top * fHeightRatio;
+			rcCrop2.bottom = rcPic.top + rcCrop.bottom * fHeightRatio;
+			pMemDC->Rectangle(rcCrop2);
+
+			int iWidth = rcCrop.Width();
+			int iHeight = rcCrop.Height();
+
+			int iPadding = ((iWidth * 3) % 4) == 0 ? 0 : 4 - ((iWidth * 3) % 4);
+			char* pData2 = nullptr;
+			pData2 = new char[(iWidth + iPadding) * iHeight * 3];
+
+			bitInfo.bmiHeader.biWidth = iWidth;
+			bitInfo.bmiHeader.biHeight = iHeight;
+			int iPos = 0;
+
+			if (iPadding > 0)
+			{
+				for (int i = rcCrop.top; i < rcCrop.bottom; i++)
+				{
+					memcpy(&pData2[iPos], &m_pData[(i * m_iWidth * 3) + rcCrop.left * 3], iWidth * 3);
+					iPos += iWidth * 3;
+					memset(&pData2[iPos], 0x00, iPadding);
+					iPos += iPadding;
+				}
+			}
+			else
+			{
+				for (int i = rcCrop.bottom; i < rcCrop.bottom; i++)
+				{
+					memcpy(&pData2[iPos], &m_pData[(i * m_iWidth * 3) + rcCrop.left * 3], iWidth * 3);
+					iPos += iWidth * 3;
+				}
+			}
+
+
+			CRect rcPic2;
+			m_pic2.GetWindowRect(&rcPic2);
+			ScreenToClient(&rcPic2);
+			SetStretchBltMode(pMemDC->GetSafeHdc(), COLORONCOLOR);  // set iMode.
+			StretchDIBits(pMemDC->GetSafeHdc(), rcPic2.left, rcPic2.top, rcPic2.Width(), rcPic2.Height(),
+				0, 0, bitInfo.bmiHeader.biWidth, bitInfo.bmiHeader.biHeight, pData2, &bitInfo, DIB_RGB_COLORS, SRCCOPY);
 			
-
-
+			CString sImageInfo;
+			sImageInfo.Format(_T("이미지 넓이: %d 높이: %d, 컨트롤 넓이: %d, 높이: %d"), m_iWidth, m_iHeight, rcPic.Width(), rcPic.Height());
+			pMemDC->DrawText(sImageInfo, rcClient, DT_BOTTOM| DT_CENTER | DT_SINGLELINE);
 		}
 
 		if (m_iDrawMode == 0)
 		{
-			dc.BitBlt(rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(), pMemDC, rcPic.left,rcPic.top, SRCCOPY);
+			dc.BitBlt(rcClient.left, rcClient.top, rcClient.Width(), rcClient.Height(), pMemDC, rcClient.left, rcClient.top, SRCCOPY);
 		}
-		else if(m_iDrawMode == 1)
-		{
-			dc.StretchBlt(rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(), pMemDC, rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(), SRCCOPY);
-		}
-		
 
 	}
 }
@@ -290,6 +338,9 @@ void CMFCTestDlg::OnBnClickedButtonBitblt()
 		
 		file.Read(&m_bitFileHeader, sizeof(BITMAPFILEHEADER));
 		file.Read(&m_bitInfoHeader, sizeof(BITMAPINFOHEADER));
+
+		m_iWidth = m_bitInfoHeader.biWidth;
+		m_iHeight = m_bitInfoHeader.biHeight;
 
 		int iBmpSize = m_bitFileHeader.bfSize - m_bitFileHeader.bfOffBits;
 		m_pData = new char[iBmpSize];

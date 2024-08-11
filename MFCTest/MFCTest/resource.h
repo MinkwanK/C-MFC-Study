@@ -16,6 +16,7 @@
 #define IDC_BUTTON_BitBlt               1006
 #define IDC_STATIC_Pic                  1007
 #define IDC_BUTTON_Stretch              1008
+#define IDC_STATIC_Pic2                 1009
 
 // Next default values for new objects
 // 
