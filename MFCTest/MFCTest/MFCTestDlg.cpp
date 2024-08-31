@@ -12,9 +12,10 @@
 #define new DEBUG_NEW
 #endif
 
+extern CPerson m_Person;
+extern int m_iAge = 0;
 
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
-
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -65,6 +66,7 @@ void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PROGRESS3, m_progress3);
 	DDX_Control(pDX, IDC_STATIC_Pic, m_pic);
 	DDX_Control(pDX, IDC_STATIC_Pic2, m_pic2);
+	DDX_Control(pDX, IDC_LIST1, m_List);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
@@ -76,6 +78,8 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON3, &CMFCTestDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON_BitBlt, &CMFCTestDlg::OnBnClickedButtonBitblt)
 	ON_BN_CLICKED(IDC_BUTTON_Stretch, &CMFCTestDlg::OnBnClickedButtonStretch)
+	ON_BN_CLICKED(IDC_BUTTON_ANIMAL, &CMFCTestDlg::OnBnClickedButtonAnimal)
+	ON_BN_CLICKED(IDC_BUTTON_DOG, &CMFCTestDlg::OnBnClickedButtonDog)
 END_MESSAGE_MAP()
 
 
@@ -378,3 +382,32 @@ void CMFCTestDlg::OnBnClickedButtonStretch()
 
 	m_iDrawMode = 1;
 }
+
+
+
+void CMFCTestDlg::OnBnClickedButtonAnimal()
+{
+	CAnimal animal;
+	CString str;
+	str.Format(_T("만들어진 Animal 개수: %d"),animal.GetAnimalCnt());
+	m_List.AddString(animal.m_sLine);
+	m_List.AddString(str);
+
+	str.Format(_T("Extern Person m_iAge %d"), m_iAge);
+	m_List.AddString(str);
+
+	
+	
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonDog()
+{
+	CDog dog;
+	m_List.AddString(dog.m_sLine);
+
+	CAnimal* animal = new CDog();
+	m_List.AddString(animal->m_sLine);
+}
+
+

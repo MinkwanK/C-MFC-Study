@@ -3,8 +3,9 @@
 //
 
 #pragma once
-
-
+#include "Animal.h"
+#include "Dog.h"
+#include "Person.h"
 // CMFCTestDlg 대화 상자
 class CMFCTestDlg : public CDialogEx
 {
@@ -54,4 +55,7 @@ public:
 
 	afx_msg void OnBnClickedButtonStretch();
 	CStatic m_pic2;
+	afx_msg void OnBnClickedButtonAnimal();
+	CListBox m_List;
+	afx_msg void OnBnClickedButtonDog();
 };
