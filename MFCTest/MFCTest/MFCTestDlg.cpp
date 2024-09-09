@@ -80,6 +80,7 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_Stretch, &CMFCTestDlg::OnBnClickedButtonStretch)
 	ON_BN_CLICKED(IDC_BUTTON_ANIMAL, &CMFCTestDlg::OnBnClickedButtonAnimal)
 	ON_BN_CLICKED(IDC_BUTTON_DOG, &CMFCTestDlg::OnBnClickedButtonDog)
+	ON_BN_CLICKED(IDC_BUTTON_KOREAN, &CMFCTestDlg::OnBnClickedButtonKorean)
 END_MESSAGE_MAP()
 
 
@@ -119,6 +120,8 @@ BOOL CMFCTestDlg::OnInitDialog()
 	m_progress2.SetRange(0, 100);
 	m_progress3.SetRange(0, 100);
 	InitializeCriticalSection(&m_cs);
+	
+	GetDlgItem(IDC_EDIT_STRING)->SetWindowText(_T("안녕하세요"));
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -411,3 +414,23 @@ void CMFCTestDlg::OnBnClickedButtonDog()
 }
 
 
+
+
+void CMFCTestDlg::OnBnClickedButtonKorean()
+{
+	CString sEdit;
+	GetDlgItem(IDC_EDIT_STRING)->GetWindowText(sEdit);
+
+	if (sEdit.GetLength() > 2)
+	{
+		char cFirst = sEdit[0];
+		
+		if (cFirst & 0x80)
+		{
+			m_List.AddString(_T("첫 글자가 한글입니다."));
+		}
+		char cSecond = sEdit[1];
+
+		TRACE(_T(""));
+	}
+}

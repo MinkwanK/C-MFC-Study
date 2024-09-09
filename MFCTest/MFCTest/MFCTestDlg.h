@@ -58,4 +58,5 @@ public:
 	afx_msg void OnBnClickedButtonAnimal();
 	CListBox m_List;
 	afx_msg void OnBnClickedButtonDog();
+	afx_msg void OnBnClickedButtonKorean();
 };

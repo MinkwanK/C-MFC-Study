@@ -20,6 +20,13 @@
 #define IDC_BUTTON_ANIMAL               1010
 #define IDC_LIST1                       1011
 #define IDC_BUTTON_DOG                  1012
+#define IDC_EDIT_STRING                 1013
+#define IDC_BUTTON_KOREAN               1014
+#define IDC_EDIT_LEFT                   1015
+#define IDC_EDIT_TOP                    1016
+#define IDC_EDIT_RIGHT                  1017
+#define IDC_EDIT5                       1018
+#define IDC_EDIT_BOTTOM                 1018
 
 // Next default values for new objects
 // 
@@ -27,7 +34,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1013
+#define _APS_NEXT_CONTROL_VALUE         1016
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
