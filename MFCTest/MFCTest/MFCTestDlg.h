@@ -6,6 +6,7 @@
 #include "Animal.h"
 #include "Dog.h"
 #include "Person.h"
+#include "ScrollTest.h"
 // CMFCTestDlg 대화 상자
 class CMFCTestDlg : public CDialogEx
 {
@@ -52,6 +53,8 @@ public:
 	BITMAPINFOHEADER m_bitInfoHeader;
 
 	int m_iDrawMode;
+	int m_iScroll;
+	CScrollTest* m_pScrollTest;
 
 	afx_msg void OnBnClickedButtonStretch();
 	CStatic m_pic2;
@@ -59,4 +62,5 @@ public:
 	CListBox m_List;
 	afx_msg void OnBnClickedButtonDog();
 	afx_msg void OnBnClickedButtonKorean();
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 };

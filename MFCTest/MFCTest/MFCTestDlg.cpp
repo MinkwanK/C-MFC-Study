@@ -81,6 +81,7 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_ANIMAL, &CMFCTestDlg::OnBnClickedButtonAnimal)
 	ON_BN_CLICKED(IDC_BUTTON_DOG, &CMFCTestDlg::OnBnClickedButtonDog)
 	ON_BN_CLICKED(IDC_BUTTON_KOREAN, &CMFCTestDlg::OnBnClickedButtonKorean)
+	ON_WM_MOUSEWHEEL()
 END_MESSAGE_MAP()
 
 
@@ -123,6 +124,24 @@ BOOL CMFCTestDlg::OnInitDialog()
 	
 	GetDlgItem(IDC_EDIT_STRING)->SetWindowText(_T("안녕하세요"));
 
+	if (!m_pScrollTest)
+	{
+		m_pScrollTest = new CScrollTest();
+		m_pScrollTest->Create(IDD_DIALOG_SCROLL_TEST, this);
+		m_pScrollTest->ShowWindow(SW_SHOW);
+
+		CRect rc;
+		GetDlgItem(IDC_BUTTON_Stretch)->GetWindowRect(rc);
+		ScreenToClient(rc);
+
+		rc.right *= 3;
+		rc.top = rc.bottom + 10;
+		rc.bottom *= 2;
+
+		m_pScrollTest->MoveWindow(rc);
+	}
+
+	
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -433,4 +452,11 @@ void CMFCTestDlg::OnBnClickedButtonKorean()
 
 		TRACE(_T(""));
 	}
+}
+
+
+BOOL CMFCTestDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+
+	return CDialogEx::OnMouseWheel(nFlags, zDelta, pt);
 }
