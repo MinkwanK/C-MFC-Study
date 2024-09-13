@@ -457,6 +457,5 @@ void CMFCTestDlg::OnBnClickedButtonKorean()
 
 BOOL CMFCTestDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-
 	return CDialogEx::OnMouseWheel(nFlags, zDelta, pt);
 }
