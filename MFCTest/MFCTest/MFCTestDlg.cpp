@@ -8,6 +8,7 @@
 #include "MFCTestDlg.h"
 #include "afxdialogex.h"
 #include <thread>
+#include <chrono>
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -82,6 +83,7 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_DOG, &CMFCTestDlg::OnBnClickedButtonDog)
 	ON_BN_CLICKED(IDC_BUTTON_KOREAN, &CMFCTestDlg::OnBnClickedButtonKorean)
 	ON_WM_MOUSEWHEEL()
+	ON_BN_CLICKED(IDC_BUTTON_NOW, &CMFCTestDlg::OnBnClickedButtonNow)
 END_MESSAGE_MAP()
 
 
@@ -458,4 +460,25 @@ void CMFCTestDlg::OnBnClickedButtonKorean()
 BOOL CMFCTestDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	return CDialogEx::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonNow()
+{
+	std::chrono::system_clock::time_point now =  std::chrono::system_clock::now();
+	std::time_t timeT = std::chrono::system_clock::to_time_t(now);
+
+	FILETIME fileTime;
+	SYSTEMTIME stTime;
+
+	__int64 time = static_cast<__int64>(timeT) * 10000000 + 116444736000000000LL; // 1970-01-01 to 1601-01-01
+	fileTime.dwLowDateTime = (DWORD)(time & 0xFFFFFFFF);
+	fileTime.dwHighDateTime = (DWORD)(time >> 32);
+
+	FileTimeToSystemTime(&fileTime, &stTime);
+
+	CString sTime;
+	sTime.Format(_T("<time_point -> time_t 변환 -> filetime 변환 -> systemtime 변환 %04d.%02d.%02d %02d:%02d:%02d>"), stTime.wYear, stTime.wMonth, stTime.wDay,stTime.wHour,stTime.wMinute,stTime.wSecond);
+	m_List.AddString(sTime);
+
 }
