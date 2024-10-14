@@ -36,16 +36,36 @@ protected:
 public:
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedButton2();
-	CProgressCtrl m_progress;
-	CProgressCtrl m_progress2;
-	CRITICAL_SECTION m_cs;
+	afx_msg void OnBnClickedButton3();
+	afx_msg void OnBnClickedButtonBitblt();
+	afx_msg void OnBnClickedButtonStretch();
+	afx_msg void OnBnClickedButtonAnimal();
+	afx_msg void OnBnClickedButtonDog();
+	afx_msg void OnBnClickedButtonKorean();
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnBnClickedButtonNow();
+	afx_msg void OnBnClickedButtonSetup();
+	afx_msg void OnBnClickedButtonItsens();
+	afx_msg void OnBnClickedButtonServer();
+	afx_msg void OnBnClickedButtonCreateEnforceFile();
+	afx_msg void OnClose();
+	afx_msg void OnBnClickedButtonSetSetupDir();
+	afx_msg void OnBnClickedButtonSetItsenseDir();
 	void Thread1();
 	void Thread2();
 	void Thread3();
+
+	static void CreateEnforceFile(CMFCTestDlg* pDlg);
+	void CreateEnforceFileProc();
+
+	int CopyFolder(CString szFrom, CString szTo);
+
+public:
+	CProgressCtrl m_progress;
+	CProgressCtrl m_progress2;
+	CRITICAL_SECTION m_cs;
 	CProgressCtrl m_progress3;
-	afx_msg void OnBnClickedButton3();
 	CStatic m_pic;
-	afx_msg void OnBnClickedButtonBitblt();
 	char* m_pData;
 	int m_iHeight;
 	int m_iWidth;
@@ -55,13 +75,14 @@ public:
 	int m_iDrawMode;
 	int m_iScroll;
 	CScrollTest* m_pScrollTest;
+	BOOL m_bMakingFile;
+	HANDLE m_hStopEvent;
+	CString m_sSetupPath;
+	CString m_sITSensPath;
 
-	afx_msg void OnBnClickedButtonStretch();
 	CStatic m_pic2;
-	afx_msg void OnBnClickedButtonAnimal();
 	CListBox m_List;
-	afx_msg void OnBnClickedButtonDog();
-	afx_msg void OnBnClickedButtonKorean();
-	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-	afx_msg void OnBnClickedButtonNow();
+
+	afx_msg void OnBnClickedButtonMakeItsensFolder();
+	afx_msg void OnBnClickedButtonItagent();
 };

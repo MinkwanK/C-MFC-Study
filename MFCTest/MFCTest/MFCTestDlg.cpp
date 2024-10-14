@@ -16,6 +16,7 @@
 extern CPerson m_Person;
 extern int m_iAge = 0;
 
+const CString SETUP_INI_PATH = _T("Setup.ini");
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
 class CAboutDlg : public CDialogEx
 {
@@ -55,7 +56,7 @@ END_MESSAGE_MAP()
 CMFCTestDlg::CMFCTestDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFCTEST_DIALOG, pParent)
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(IDI_ICON1);
 	m_pData = nullptr;
 }
 
@@ -84,6 +85,15 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_KOREAN, &CMFCTestDlg::OnBnClickedButtonKorean)
 	ON_WM_MOUSEWHEEL()
 	ON_BN_CLICKED(IDC_BUTTON_NOW, &CMFCTestDlg::OnBnClickedButtonNow)
+	ON_BN_CLICKED(IDC_BUTTON_SETUP, &CMFCTestDlg::OnBnClickedButtonSetup)
+	ON_BN_CLICKED(IDC_BUTTON_ITSens, &CMFCTestDlg::OnBnClickedButtonItsens)
+	ON_BN_CLICKED(IDC_BUTTON_SERVER, &CMFCTestDlg::OnBnClickedButtonServer)
+	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE, &CMFCTestDlg::OnBnClickedButtonCreateEnforceFile)
+	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_BUTTON_SET_SETUP_DIR, &CMFCTestDlg::OnBnClickedButtonSetSetupDir)
+	ON_BN_CLICKED(IDC_BUTTON_SET_ITSENSE_DIR, &CMFCTestDlg::OnBnClickedButtonSetItsenseDir)
+	ON_BN_CLICKED(IDC_BUTTON_MAKE_ITSENS_FOLDER, &CMFCTestDlg::OnBnClickedButtonMakeItsensFolder)
+	ON_BN_CLICKED(IDC_BUTTON_ITAGENT, &CMFCTestDlg::OnBnClickedButtonItagent)
 END_MESSAGE_MAP()
 
 
@@ -143,7 +153,7 @@ BOOL CMFCTestDlg::OnInitDialog()
 		m_pScrollTest->MoveWindow(rc);
 	}
 
-	
+	m_hStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -414,24 +424,16 @@ void CMFCTestDlg::OnBnClickedButtonAnimal()
 	CAnimal animal;
 	CString str;
 	str.Format(_T("만들어진 Animal 개수: %d"),animal.GetAnimalCnt());
-	m_List.AddString(animal.m_sLine);
+	m_List.AddString(animal.m_sSay);
 	m_List.AddString(str);
-
-	str.Format(_T("Extern Person m_iAge %d"), m_iAge);
-	m_List.AddString(str);
-
-	
-	
 }
 
 
 void CMFCTestDlg::OnBnClickedButtonDog()
 {
 	CDog dog;
-	m_List.AddString(dog.m_sLine);
-
-	CAnimal* animal = new CDog();
-	m_List.AddString(animal->m_sLine);
+	int iSel = m_List.AddString(dog.m_sSay);
+	m_List.SetCurSel(iSel);
 }
 
 
@@ -448,7 +450,8 @@ void CMFCTestDlg::OnBnClickedButtonKorean()
 		
 		if (cFirst & 0x80)
 		{
-			m_List.AddString(_T("첫 글자가 한글입니다."));
+			int iSel = m_List.AddString(_T("첫 글자가 한글입니다."));
+			m_List.SetCurSel(iSel);
 		}
 		char cSecond = sEdit[1];
 
@@ -479,6 +482,355 @@ void CMFCTestDlg::OnBnClickedButtonNow()
 
 	CString sTime;
 	sTime.Format(_T("<time_point -> time_t 변환 -> filetime 변환 -> systemtime 변환 %04d.%02d.%02d %02d:%02d:%02d>"), stTime.wYear, stTime.wMonth, stTime.wDay,stTime.wHour,stTime.wMinute,stTime.wSecond);
-	m_List.AddString(sTime);
+	int iSel = m_List.AddString(sTime);
+	m_List.SetCurSel(iSel);
 
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonSetup()
+{
+	CString sMaxCode, sPath;
+	GetDlgItem(IDC_EDIT_SETUP)->GetWindowText(sMaxCode);
+	int iCode = 0;
+	int iMaxCode = _ttoi(sMaxCode);
+	
+	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
+
+	if (folderDlg.DoModal() == IDOK) // 대화 상자를 표시하고 사용자가 확인을 선택했는지 확인
+	{
+		sPath = folderDlg.GetPathName();
+	}
+	else
+		return;
+
+	CString sSection = _T("enforcement");
+	CString sKey = _T("devid");
+	CString sFileName;
+	CString sCode;
+	for (iCode = 0; iCode < iMaxCode; iCode++)
+	{
+		sFileName.Format(_T("%s\\Setup_%04d.ini"), sPath,iCode);
+		CopyFile(SETUP_INI_PATH, sFileName,TRUE);
+		sCode.Format(_T("G%04d"), iCode);
+		WritePrivateProfileString(sSection, sKey, sCode, sFileName);
+	}
+
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonItsens()
+{
+	CString str = _T("exe 파일 (*.exe)|*.exe|"); // 모든 파일 표시
+	// _T("Excel 파일 (*.xls, *.xlsx) |*.xls; *.xlsx|"); 와 같이 확장자를 제한하여 표시할 수 있음
+	CFileDialog dlg(TRUE, _T("*.dat"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
+	CString sMax;
+
+
+	GetDlgItem(IDC_EDIT_ITSens)->GetWindowText(sMax);
+	int iMax = _ttoi(sMax);
+	CString sSetupPath;
+	for (int i = 0; i < iMax; i++)
+	{
+		sSetupPath.Format(_T("%s\\Setup_%04d.ini"), m_sSetupPath, i);
+		SHELLEXECUTEINFO stShellInfo = { sizeof(SHELLEXECUTEINFO) };
+		stShellInfo.lpVerb = _T("runas");
+		stShellInfo.lpFile = m_sITSensPath;
+		stShellInfo.lpParameters = sSetupPath;
+		stShellInfo.nShow = SW_SHOWNORMAL;
+		ShellExecuteEx(&stShellInfo);
+	}
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonServer()
+{
+	CString sMax, sPath;
+	GetDlgItem(IDC_EDIT_SERVER)->GetWindowText(sMax);
+	int iIndex = 0;
+	int iMax = _ttoi(sMax);
+
+	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
+	folderDlg.GetOFN().lpstrTitle = _T("ITSens Setup을 생성할 폴더를 지정하세요");
+
+	if (folderDlg.DoModal() == IDOK) // 대화 상자를 표시하고 사용자가 확인을 선택했는지 확인
+	{
+		sPath = folderDlg.GetPathName();
+	}
+	else
+		return;
+
+	CString sSection = _T("DEVICE");
+	CString sKey = _T("CODE");
+	CString sFileName;
+	CString sValue;
+	for (iIndex = 0; iIndex < iMax; iIndex++)
+	{
+		sFileName.Format(_T("%s\\G%04d.ini"), sPath, iIndex);
+		sKey = _T("CODE");
+		sValue.Format(_T("G%04d"), iIndex);
+		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
+		sKey = _T("TITLE");
+		sValue.Format(_T("TEST%04d"), iIndex);
+		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
+		sKey = _T("IP");
+		sValue = _T("127.0.0.1");
+		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
+		sKey = _T("CREATE");
+		SYSTEMTIME st;
+		GetLocalTime(&st);
+		sValue.Format(_T("%04d.%02d.%02d. %02d:%02d:%02d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
+		sKey = _T("MODIFY");
+		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
+		sKey = _T("SITE");
+		sValue = _T("회사앞");
+		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
+	}
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonCreateEnforceFile()
+{
+	if (!m_bMakingFile)
+	{
+		std::thread createFile(&CMFCTestDlg::CreateEnforceFile, this);
+		createFile.detach();
+	}
+	else
+	{
+		SetEvent(m_hStopEvent);
+	}
+}
+
+void CMFCTestDlg::CreateEnforceFile(CMFCTestDlg* pDlg)
+{
+	if (pDlg)
+		pDlg->CreateEnforceFileProc();
+}
+
+void CMFCTestDlg::CreateEnforceFileProc()
+{
+	CString str = _T("단속 파일 (*.*)|*.*|"); // 모든 파일 표시
+	CFileDialog dlg(TRUE, _T("*.DAT"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
+	dlg.GetOFN().lpstrTitle = _T("생성할 TEMS 단속 파일 선택");
+	CString sPath;
+	CString sFileName;
+	CString sCopyPath;
+	CString sMax;
+	GetDlgItem(IDC_EDIT_ITSens)->GetWindowText(sMax);
+	int iMax = _ttoi(sMax);
+
+	if (dlg.DoModal() == IDOK)
+	{
+		sPath = dlg.GetPathName();
+		sFileName = dlg.GetFileTitle();
+		while (TRUE)
+		{
+			DWORD dwResult = WaitForSingleObject(m_hStopEvent, 1000);
+			switch (dwResult)
+			{
+			case WAIT_OBJECT_0:
+			{
+				m_List.AddString(_T("TEMS 제출 파일 생성 스레드 종료"));
+				m_bMakingFile = FALSE;
+				break;
+			}break;
+			case WAIT_TIMEOUT:
+			{
+				CString sTemp;
+				for (int i = 0; i < iMax; i++)
+				{
+					CString sCode,sDate;
+					SYSTEMTIME st;
+					sCode.Format(_T("G%04d"), i);
+					sTemp = sFileName.Left(3);
+					sTemp += sCode + _T("_");
+					GetLocalTime(&st);
+					sDate.Format(_T("%04d%02d%02d%02d%02d%02d%03d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+					sTemp += sDate + _T("_");
+					sTemp += sFileName.Mid(27, 2) + _T("_");
+					sTemp += sFileName.Right(2) + _T(".DAT");
+				
+					sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
+					if (CopyFile(sPath, sCopyPath, 1))
+					{
+						CString sMsg;
+						sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
+						int iSel = m_List.AddString(sMsg);
+						m_List.SetCurSel(iSel);
+					}
+					m_bMakingFile = TRUE;
+				}
+			}break;
+			}
+
+			if (!m_bMakingFile)
+				break;
+		}
+		m_bMakingFile = FALSE;
+	}
+}
+
+
+void CMFCTestDlg::OnClose()
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+
+	CDialogEx::OnClose();
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonSetSetupDir()
+{
+	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
+	folderDlg.GetOFN().lpstrTitle = _T("Setup 폴더 선택하세요.");
+	if (folderDlg.DoModal() == IDOK) // 대화 상자를 표시하고 사용자가 확인을 선택했는지 확인
+	{
+		m_sSetupPath = folderDlg.GetPathName();
+	}
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonSetItsenseDir()
+{
+	CString str = _T("exe 파일 (*.exe)|*.exe|"); // 모든 파일 표시
+
+	CFileDialog dlg(TRUE, _T("*.exe"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
+
+	if (dlg.DoModal() == IDOK) // 대화 상자를 표시하고 사용자가 확인을 선택했는지 확인
+	{
+		m_sITSensPath = dlg.GetPathName();
+	}
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonMakeItsensFolder()
+{
+	CString sMin, sMax, sPath, sSaveFolder, sName;
+	int iMin, iMax, iCnt = 0;
+	GetDlgItem(IDC_EDIT_MIN)->GetWindowText(sMin);
+	GetDlgItem(IDC_EDIT_MAX)->GetWindowText(sMax);
+	iMin = _ttoi(sMin);
+	iMax = _ttoi(sMax);
+
+	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
+	folderDlg.GetOFN().lpstrTitle = _T("복사할 ITSens 폴더를 선택하세요.");
+	if (folderDlg.DoModal() == IDOK)
+	{
+		sPath = folderDlg.GetPathName();
+		sName = folderDlg.GetFileName();
+		CFolderPickerDialog folderDlg2(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
+
+		if (folderDlg2.DoModal() == IDOK)
+		{
+			folderDlg2.GetOFN().lpstrTitle = _T("복사한 ITSens를 저장할 폴더를 선택하세요.");
+			sSaveFolder = folderDlg2.GetPathName();
+
+			for (iCnt = iMin; iCnt < iMax; ++iCnt)
+			{
+				CString sNewPath;
+				sNewPath.Format(_T("%s\\%s%d"), sSaveFolder, sName, iCnt);
+
+				CopyFolder(sPath, sNewPath);
+
+				CString sModifySetupPath;
+				sModifySetupPath.Format(_T("%s\\Setup.ini"),sNewPath);
+
+				CString sOldExeName;
+				CString sNewExeName;
+				sOldExeName.Format(_T("%s\\ITSensViewer.exe"),sPath,iCnt);
+				sNewExeName.Format(_T("%s\\ITSensViewer%d.exe"), sNewPath,iCnt);
+				CopyFile(sOldExeName, sNewExeName,TRUE);
+
+				CString sSection = _T("enforcement");
+				CString sKey = _T("devid");
+				CString sValue;
+				sValue.Format(_T("G%04d"), iCnt);
+				WritePrivateProfileString(sSection, sKey, sValue, sModifySetupPath);
+
+			}
+
+		}
+	}
+
+}
+
+//https://jangjy.tistory.com/378
+int CMFCTestDlg::CopyFolder(CString szFrom, CString szTo)
+{
+	HANDLE hSrch;
+	WIN32_FIND_DATA wfd;
+	BOOL bResult = TRUE;
+	TCHAR WildCard[MAX_PATH];
+	TCHAR SrcFile[MAX_PATH];
+	TCHAR DestFile[MAX_PATH];
+
+	wsprintf(WildCard, "%s\\*.*", szFrom);
+	CreateDirectory(szTo, NULL);
+	hSrch = FindFirstFile(WildCard, &wfd);
+	if (hSrch == INVALID_HANDLE_VALUE)
+		return FALSE;
+	while (bResult) {
+		wsprintf(SrcFile, "%s\\%s", szFrom, wfd.cFileName);
+		wsprintf(DestFile, "%s\\%s", szTo, wfd.cFileName);
+		// 서브 디렉토리가 발견되면 서브 디렉토리를 복사한다.
+		if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			if (lstrcmp(wfd.cFileName, ".") && lstrcmp(wfd.cFileName, "..")) {
+				CopyFolder(SrcFile, DestFile);
+			}
+		}
+		else {
+			CopyFile(SrcFile, DestFile, FALSE);
+		}
+		bResult = FindNextFile(hSrch, &wfd);
+	}
+	FindClose(hSrch);
+	return TRUE;
+}
+
+void CMFCTestDlg::OnBnClickedButtonItagent()
+{
+	CString sMin, sMax, sPath, sAgentProccessPath, sName;
+	int iMin, iMax, iCnt = 0;
+	GetDlgItem(IDC_EDIT_MIN)->GetWindowText(sMin);
+	GetDlgItem(IDC_EDIT_MAX)->GetWindowText(sMax);
+	iMin = _ttoi(sMin);
+	iMax = _ttoi(sMax);
+
+
+	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
+	folderDlg.GetOFN().lpstrTitle = _T("itcous 내부 ITSens 폴더들이 위치한 경로를 지정해주세요.");
+	if (folderDlg.DoModal() == IDOK)
+	{
+		sPath = folderDlg.GetPathName();	//ITSens 폴더 경로
+		CString str = _T("ini 파일 (*.ini)|*.ini|"); // 모든 파일 표시
+		CFileDialog fileDlg(TRUE, _T("*.ini"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
+		fileDlg.GetOFN().lpstrTitle = _T("복사할 ITAgent 내부 process ini 파일을 선택하세요");
+		if (fileDlg.DoModal() == IDOK)	//ITAgent 프로세스 폴더 경로
+		{
+			CString sProccessFolderPath = fileDlg.GetFolderPath();
+			CString sPrecessName = fileDlg.GetFileName();
+
+			for (iCnt = iMin; iCnt < iMax; ++iCnt)
+			{
+				CString sProccessPath;
+				sProccessPath.Format(_T("%s%d\\\ITSensViewer%d.exe"), sPath, iCnt,iCnt);
+
+				CString sNewName;
+				sNewName.Format(_T("%s\\ITSensViewer%d.ini"), sProccessFolderPath, iCnt);
+				CopyFile(fileDlg.GetPathName(), sNewName, TRUE);
+
+				CString sSection = _T("PROCESS");
+				CString sKey = _T("PROCESS");
+				CString sValue = sProccessPath;
+				WritePrivateProfileString(sSection, sKey, sValue, sNewName	);
+				sKey = _T("ERROR SEC");
+				sValue = _T("30");
+				WritePrivateProfileString(sSection, sKey, sValue, sNewName);
+
+			}
+
+		}
+	}
 }

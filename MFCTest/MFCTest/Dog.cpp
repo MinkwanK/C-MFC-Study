@@ -12,5 +12,5 @@ CDog::~CDog()
 
 void CDog::Introduce()
 {
-	m_sLine = _T("I am Dog");
+	m_sSay = _T("I am Dog");
 }

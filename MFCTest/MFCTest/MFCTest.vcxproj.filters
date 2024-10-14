@@ -83,5 +83,14 @@
     <Image Include="res\MFCTest.ico">
       <Filter>리소스 파일</Filter>
     </Image>
+    <Image Include="res\icon1.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="res\Dog_icon.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="res\wheel-icons.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
   </ItemGroup>
 </Project>

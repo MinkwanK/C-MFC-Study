@@ -8,6 +8,8 @@
 #define IDD_MFCTEST_DIALOG              102
 #define IDR_MAINFRAME                   128
 #define IDD_DIALOG_SCROLL_TEST          130
+#define IDI_ICON1                       133
+#define IDI_ICON2                       134
 #define IDC_BUTTON1                     1000
 #define IDC_BUTTON2                     1001
 #define IDC_PROGRESS1                   1002
@@ -31,14 +33,27 @@
 #define IDC_STATIC_SCROLL_TEXT          1022
 #define IDC_STATIC_END_TEXT             1023
 #define IDC_BUTTON_NOW                  1024
+#define IDC_BUTTON_SETUP                1025
+#define IDC_EDIT_SETUP                  1026
+#define IDC_EDIT_ITSens                 1027
+#define IDC_BUTTON_ITSens               1028
+#define IDC_BUTTON_SERVER               1029
+#define IDC_EDIT_SERVER                 1030
+#define IDC_BUTTON_CREATE_ENFORCE_FILE  1031
+#define IDC_BUTTON_SET_SETUP_DIR        1032
+#define IDC_BUTTON_SET_ITSENSE_DIR      1033
+#define IDC_BUTTON_MAKE_ITSENS_FOLDER   1034
+#define IDC_EDIT_MIN                    1035
+#define IDC_EDIT_MAX                    1036
+#define IDC_BUTTON_ITAGENT              1037
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        132
+#define _APS_NEXT_RESOURCE_VALUE        135
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1025
+#define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
