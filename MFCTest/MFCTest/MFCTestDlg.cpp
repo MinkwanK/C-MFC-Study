@@ -527,7 +527,7 @@ void CMFCTestDlg::OnBnClickedButtonItsens()
 	CString sMax;
 
 
-	GetDlgItem(IDC_EDIT_ITSens)->GetWindowText(sMax);
+	GetDlgItem(IDC_EDIT_SETUP)->GetWindowText(sMax);
 	int iMax = _ttoi(sMax);
 	CString sSetupPath;
 	for (int i = 0; i < iMax; i++)
@@ -546,7 +546,7 @@ void CMFCTestDlg::OnBnClickedButtonItsens()
 void CMFCTestDlg::OnBnClickedButtonServer()
 {
 	CString sMax, sPath;
-	GetDlgItem(IDC_EDIT_SERVER)->GetWindowText(sMax);
+	GetDlgItem(IDC_EDIT_SETUP)->GetWindowText(sMax);
 	int iIndex = 0;
 	int iMax = _ttoi(sMax);
 
@@ -614,12 +614,13 @@ void CMFCTestDlg::CreateEnforceFileProc()
 	CString str = _T("단속 파일 (*.*)|*.*|"); // 모든 파일 표시
 	CFileDialog dlg(TRUE, _T("*.DAT"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
 	dlg.GetOFN().lpstrTitle = _T("생성할 TEMS 단속 파일 선택");
-	CString sPath;
-	CString sFileName;
-	CString sCopyPath;
-	CString sMax;
-	GetDlgItem(IDC_EDIT_ITSens)->GetWindowText(sMax);
-	int iMax = _ttoi(sMax);
+	CString sPath, sFileName, sCopyPath;
+	CString sMin, sMax;
+	int iMin, iMax, iCnt = 0;
+	GetDlgItem(IDC_EDIT_MIN)->GetWindowText(sMin);
+	GetDlgItem(IDC_EDIT_MAX)->GetWindowText(sMax);
+	iMin = _ttoi(sMin);
+	iMax = _ttoi(sMax);
 
 	if (dlg.DoModal() == IDOK)
 	{
@@ -627,44 +628,37 @@ void CMFCTestDlg::CreateEnforceFileProc()
 		sFileName = dlg.GetFileTitle();
 		while (TRUE)
 		{
-			DWORD dwResult = WaitForSingleObject(m_hStopEvent, 1000);
-			switch (dwResult)
+			CString sTemp;
+			for (int i = iMin; i <= iMax; i++)
 			{
-			case WAIT_OBJECT_0:
-			{
-				m_List.AddString(_T("TEMS 제출 파일 생성 스레드 종료"));
-				m_bMakingFile = FALSE;
-				break;
-			}break;
-			case WAIT_TIMEOUT:
-			{
-				CString sTemp;
-				for (int i = 0; i < iMax; i++)
+				DWORD dwResult = WaitForSingleObject(m_hStopEvent, 1000);
+				if (dwResult == WAIT_OBJECT_0)
 				{
-					CString sCode,sDate;
-					SYSTEMTIME st;
-					sCode.Format(_T("G%04d"), i);
-					sTemp = sFileName.Left(3);
-					sTemp += sCode + _T("_");
-					GetLocalTime(&st);
-					sDate.Format(_T("%04d%02d%02d%02d%02d%02d%03d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-					sTemp += sDate + _T("_");
-					sTemp += sFileName.Mid(27, 2) + _T("_");
-					sTemp += sFileName.Right(2) + _T(".DAT");
-				
-					sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
-					if (CopyFile(sPath, sCopyPath, 1))
-					{
-						CString sMsg;
-						sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
-						int iSel = m_List.AddString(sMsg);
-						m_List.SetCurSel(iSel);
-					}
-					m_bMakingFile = TRUE;
+					m_List.AddString(_T("TEMS 제출 파일 생성 스레드 종료"));
+					m_bMakingFile = FALSE;
+					return;
 				}
-			}break;
+				CString sCode,sDate;
+				SYSTEMTIME st;
+				sCode.Format(_T("G%04d"), i);
+				sTemp = sFileName.Left(3);
+				sTemp += sCode + _T("_");
+				GetLocalTime(&st);
+				sDate.Format(_T("%04d%02d%02d%02d%02d%02d%03d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+				sTemp += sDate + _T("_");
+				sTemp += sFileName.Mid(27, 2) + _T("_");
+				sTemp += sFileName.Right(2) + _T(".DAT");
+				
+				sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
+				if (CopyFile(sPath, sCopyPath, 1))
+				{
+					CString sMsg;
+					sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
+					int iSel = m_List.AddString(sMsg);
+					m_List.SetCurSel(iSel);
+				}
+				m_bMakingFile = TRUE;
 			}
-
 			if (!m_bMakingFile)
 				break;
 		}
@@ -727,7 +721,7 @@ void CMFCTestDlg::OnBnClickedButtonMakeItsensFolder()
 			folderDlg2.GetOFN().lpstrTitle = _T("복사한 ITSens를 저장할 폴더를 선택하세요.");
 			sSaveFolder = folderDlg2.GetPathName();
 
-			for (iCnt = iMin; iCnt < iMax; ++iCnt)
+			for (iCnt = iMin; iCnt <= iMax; ++iCnt)
 			{
 				CString sNewPath;
 				sNewPath.Format(_T("%s\\%s%d"), sSaveFolder, sName, iCnt);
@@ -800,19 +794,19 @@ void CMFCTestDlg::OnBnClickedButtonItagent()
 
 
 	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
-	folderDlg.GetOFN().lpstrTitle = _T("itcous 내부 ITSens 폴더들이 위치한 경로를 지정해주세요.");
+	folderDlg.GetOFN().lpstrTitle = _T("참조할 ITSens 폴더를 선택하세요.");
 	if (folderDlg.DoModal() == IDOK)
 	{
 		sPath = folderDlg.GetPathName();	//ITSens 폴더 경로
 		CString str = _T("ini 파일 (*.ini)|*.ini|"); // 모든 파일 표시
 		CFileDialog fileDlg(TRUE, _T("*.ini"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
-		fileDlg.GetOFN().lpstrTitle = _T("복사할 ITAgent 내부 process ini 파일을 선택하세요");
+		fileDlg.GetOFN().lpstrTitle = _T("참조한 폴더의 ITAgent 내부 process ini 파일을 선택하세요");
 		if (fileDlg.DoModal() == IDOK)	//ITAgent 프로세스 폴더 경로
 		{
 			CString sProccessFolderPath = fileDlg.GetFolderPath();
 			CString sPrecessName = fileDlg.GetFileName();
 
-			for (iCnt = iMin; iCnt < iMax; ++iCnt)
+			for (iCnt = iMin; iCnt <= iMax; ++iCnt)
 			{
 				CString sProccessPath;
 				sProccessPath.Format(_T("%s%d\\\ITSensViewer%d.exe"), sPath, iCnt,iCnt);

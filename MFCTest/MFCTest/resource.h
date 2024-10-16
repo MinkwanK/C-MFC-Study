@@ -35,17 +35,15 @@
 #define IDC_BUTTON_NOW                  1024
 #define IDC_BUTTON_SETUP                1025
 #define IDC_EDIT_SETUP                  1026
-#define IDC_EDIT_ITSens                 1027
-#define IDC_BUTTON_ITSens               1028
-#define IDC_BUTTON_SERVER               1029
-#define IDC_EDIT_SERVER                 1030
-#define IDC_BUTTON_CREATE_ENFORCE_FILE  1031
-#define IDC_BUTTON_SET_SETUP_DIR        1032
-#define IDC_BUTTON_SET_ITSENSE_DIR      1033
-#define IDC_BUTTON_MAKE_ITSENS_FOLDER   1034
-#define IDC_EDIT_MIN                    1035
-#define IDC_EDIT_MAX                    1036
-#define IDC_BUTTON_ITAGENT              1037
+#define IDC_BUTTON_ITSens               1027
+#define IDC_BUTTON_SERVER               1028
+#define IDC_BUTTON_CREATE_ENFORCE_FILE  1029
+#define IDC_BUTTON_SET_SETUP_DIR        1030
+#define IDC_BUTTON_SET_ITSENSE_DIR      1031
+#define IDC_BUTTON_MAKE_ITSENS_FOLDER   1032
+#define IDC_EDIT_MIN                    1033
+#define IDC_EDIT_MAX                    1034
+#define IDC_BUTTON_ITAGENT              1035
 
 // Next default values for new objects
 // 
@@ -53,7 +51,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        135
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1038
+#define _APS_NEXT_CONTROL_VALUE         1036
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
