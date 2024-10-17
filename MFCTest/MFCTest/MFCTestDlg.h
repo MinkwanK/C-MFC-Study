@@ -38,15 +38,11 @@ public:
 	afx_msg void OnBnClickedButton2();
 	afx_msg void OnBnClickedButton3();
 	afx_msg void OnBnClickedButtonBitblt();
-	afx_msg void OnBnClickedButtonStretch();
 	afx_msg void OnBnClickedButtonAnimal();
 	afx_msg void OnBnClickedButtonDog();
 	afx_msg void OnBnClickedButtonKorean();
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnBnClickedButtonNow();
-	afx_msg void OnBnClickedButtonSetup();
-	afx_msg void OnBnClickedButtonItsens();
-	afx_msg void OnBnClickedButtonServer();
 	afx_msg void OnBnClickedButtonCreateEnforceFile();
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedButtonSetSetupDir();

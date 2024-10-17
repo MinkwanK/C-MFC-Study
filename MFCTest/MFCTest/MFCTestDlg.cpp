@@ -79,15 +79,11 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMFCTestDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON3, &CMFCTestDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON_BitBlt, &CMFCTestDlg::OnBnClickedButtonBitblt)
-	ON_BN_CLICKED(IDC_BUTTON_Stretch, &CMFCTestDlg::OnBnClickedButtonStretch)
 	ON_BN_CLICKED(IDC_BUTTON_ANIMAL, &CMFCTestDlg::OnBnClickedButtonAnimal)
 	ON_BN_CLICKED(IDC_BUTTON_DOG, &CMFCTestDlg::OnBnClickedButtonDog)
 	ON_BN_CLICKED(IDC_BUTTON_KOREAN, &CMFCTestDlg::OnBnClickedButtonKorean)
 	ON_WM_MOUSEWHEEL()
 	ON_BN_CLICKED(IDC_BUTTON_NOW, &CMFCTestDlg::OnBnClickedButtonNow)
-	ON_BN_CLICKED(IDC_BUTTON_SETUP, &CMFCTestDlg::OnBnClickedButtonSetup)
-	ON_BN_CLICKED(IDC_BUTTON_ITSens, &CMFCTestDlg::OnBnClickedButtonItsens)
-	ON_BN_CLICKED(IDC_BUTTON_SERVER, &CMFCTestDlg::OnBnClickedButtonServer)
 	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE, &CMFCTestDlg::OnBnClickedButtonCreateEnforceFile)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_BUTTON_SET_SETUP_DIR, &CMFCTestDlg::OnBnClickedButtonSetSetupDir)
@@ -137,22 +133,6 @@ BOOL CMFCTestDlg::OnInitDialog()
 	
 	GetDlgItem(IDC_EDIT_STRING)->SetWindowText(_T("안녕하세요"));
 
-	if (!m_pScrollTest)
-	{
-		m_pScrollTest = new CScrollTest();
-		m_pScrollTest->Create(IDD_DIALOG_SCROLL_TEST, this);
-		m_pScrollTest->ShowWindow(SW_SHOW);
-
-		CRect rc;
-		GetDlgItem(IDC_BUTTON_Stretch)->GetWindowRect(rc);
-		ScreenToClient(rc);
-
-		rc.right *= 3;
-		rc.top = rc.bottom + 10;
-		rc.bottom *= 2;
-
-		m_pScrollTest->MoveWindow(rc);
-	}
 
 	m_hStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
@@ -332,7 +312,7 @@ void CMFCTestDlg::Thread1()
 	{
 		m_progress.SetPos(i);
 		TRACE(_T("%d\n"),i);
-		Sleep(25);
+		Sleep(1);
 	}
 	LeaveCriticalSection(&m_cs);
 	TRACE(_T("스레드1 종료\n"));
@@ -344,7 +324,8 @@ void CMFCTestDlg::Thread2()
 	for (int i = 0; i <= 100; i++)
 	{
 		m_progress2.SetPos(i);
-		Sleep(25);
+		TRACE(_T("%d\n"), i);
+		Sleep(1);
 	}
 	TRACE(_T("스레드2 종료\n"));
 }
@@ -359,7 +340,8 @@ void CMFCTestDlg::Thread3()
 		m_progress.SetPos(i);
 		m_progress2.SetPos(i);
 		m_progress3.SetPos(i);
-		Sleep(25);
+		Sleep(1);
+		TRACE(_T("%d\n"), i);
 	}
 	LeaveCriticalSection(&m_cs);
 	TRACE(_T("스레드3 종료\n"));
@@ -394,32 +376,6 @@ void CMFCTestDlg::OnBnClickedButtonBitblt()
 	}
 
 	m_iDrawMode = 0;
-}
-
-
-void CMFCTestDlg::OnBnClickedButtonStretch()
-{
-	CFile file;
-	if (file.Open(_T("test.bmp"), CFile::modeRead))
-	{
-		if (m_pData != nullptr)
-		{
-			delete[] m_pData;
-			m_pData = nullptr;
-		}
-
-		file.Read(&m_bitFileHeader, sizeof(BITMAPFILEHEADER));
-		file.Read(&m_bitInfoHeader, sizeof(BITMAPINFOHEADER));
-
-		int iBmpSize = m_bitFileHeader.bfSize - m_bitFileHeader.bfOffBits;
-		m_pData = new char[iBmpSize];
-		file.Seek(m_bitFileHeader.bfOffBits, CFile::begin);
-		file.Read(m_pData, iBmpSize);
-		file.Close();
-		Invalidate();
-	}
-
-	m_iDrawMode = 1;
 }
 
 
@@ -479,119 +435,17 @@ void CMFCTestDlg::OnBnClickedButtonNow()
 	FILETIME fileTime;
 	SYSTEMTIME stTime;
 
-	__int64 time = static_cast<__int64>(timeT) * 10000000 + 116444736000000000LL; // 1970-01-01 to 1601-01-01
-	fileTime.dwLowDateTime = (DWORD)(time & 0xFFFFFFFF);
-	fileTime.dwHighDateTime = (DWORD)(time >> 32);
+	//__int64 time = static_cast<__int64>(timeT) * 10000000 + 116444736000000000LL; // 1970-01-01 to 1601-01-01
+	//fileTime.dwLowDateTime = (DWORD)(time & 0xFFFFFFFF);
+	//fileTime.dwHighDateTime = (DWORD)(time >> 32);
 
-	FileTimeToSystemTime(&fileTime, &stTime);
-
+	//FileTimeToSystemTime(&fileTime, &stTime);
+	SetLocalTime(&stTime);
 	CString sTime;
-	sTime.Format(_T("<time_point -> time_t 변환 -> filetime 변환 -> systemtime 변환 %04d.%02d.%02d %02d:%02d:%02d>"), stTime.wYear, stTime.wMonth, stTime.wDay,stTime.wHour,stTime.wMinute,stTime.wSecond);
+	sTime.Format(_T("GetLocalTime으로 편하게 시간을 구할 수 있다. %04d.%02d.%02d %02d:%02d:%02d>"), stTime.wYear, stTime.wMonth, stTime.wDay,stTime.wHour,stTime.wMinute,stTime.wSecond);
 	int iSel = m_List.AddString(sTime);
 	m_List.SetCurSel(iSel);
 
-}
-
-
-void CMFCTestDlg::OnBnClickedButtonSetup()
-{
-	CString sMaxCode, sPath;
-	GetDlgItem(IDC_EDIT_SETUP)->GetWindowText(sMaxCode);
-	int iCode = 0;
-	int iMaxCode = _ttoi(sMaxCode);
-	
-	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
-
-	if (folderDlg.DoModal() == IDOK) // 대화 상자를 표시하고 사용자가 확인을 선택했는지 확인
-	{
-		sPath = folderDlg.GetPathName();
-	}
-	else
-		return;
-
-	CString sSection = _T("enforcement");
-	CString sKey = _T("devid");
-	CString sFileName;
-	CString sCode;
-	for (iCode = 0; iCode < iMaxCode; iCode++)
-	{
-		sFileName.Format(_T("%s\\Setup_%04d.ini"), sPath,iCode);
-		CopyFile(SETUP_INI_PATH, sFileName,TRUE);
-		sCode.Format(_T("G%04d"), iCode);
-		WritePrivateProfileString(sSection, sKey, sCode, sFileName);
-	}
-
-}
-
-
-void CMFCTestDlg::OnBnClickedButtonItsens()
-{
-	CString str = _T("exe 파일 (*.exe)|*.exe|"); // 모든 파일 표시
-	// _T("Excel 파일 (*.xls, *.xlsx) |*.xls; *.xlsx|"); 와 같이 확장자를 제한하여 표시할 수 있음
-	CFileDialog dlg(TRUE, _T("*.dat"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
-	CString sMax;
-
-
-	GetDlgItem(IDC_EDIT_SETUP)->GetWindowText(sMax);
-	int iMax = _ttoi(sMax);
-	CString sSetupPath;
-	for (int i = 0; i < iMax; i++)
-	{
-		sSetupPath.Format(_T("%s\\Setup_%04d.ini"), m_sSetupPath, i);
-		SHELLEXECUTEINFO stShellInfo = { sizeof(SHELLEXECUTEINFO) };
-		stShellInfo.lpVerb = _T("runas");
-		stShellInfo.lpFile = m_sITSensPath;
-		stShellInfo.lpParameters = sSetupPath;
-		stShellInfo.nShow = SW_SHOWNORMAL;
-		ShellExecuteEx(&stShellInfo);
-	}
-}
-
-
-void CMFCTestDlg::OnBnClickedButtonServer()
-{
-	CString sMax, sPath;
-	GetDlgItem(IDC_EDIT_SETUP)->GetWindowText(sMax);
-	int iIndex = 0;
-	int iMax = _ttoi(sMax);
-
-	CFolderPickerDialog folderDlg(NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR, NULL, NULL, NULL);
-	folderDlg.GetOFN().lpstrTitle = _T("ITSens Setup을 생성할 폴더를 지정하세요");
-
-	if (folderDlg.DoModal() == IDOK) // 대화 상자를 표시하고 사용자가 확인을 선택했는지 확인
-	{
-		sPath = folderDlg.GetPathName();
-	}
-	else
-		return;
-
-	CString sSection = _T("DEVICE");
-	CString sKey = _T("CODE");
-	CString sFileName;
-	CString sValue;
-	for (iIndex = 0; iIndex < iMax; iIndex++)
-	{
-		sFileName.Format(_T("%s\\G%04d.ini"), sPath, iIndex);
-		sKey = _T("CODE");
-		sValue.Format(_T("G%04d"), iIndex);
-		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
-		sKey = _T("TITLE");
-		sValue.Format(_T("TEST%04d"), iIndex);
-		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
-		sKey = _T("IP");
-		sValue = _T("127.0.0.1");
-		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
-		sKey = _T("CREATE");
-		SYSTEMTIME st;
-		GetLocalTime(&st);
-		sValue.Format(_T("%04d.%02d.%02d. %02d:%02d:%02d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
-		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
-		sKey = _T("MODIFY");
-		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
-		sKey = _T("SITE");
-		sValue = _T("회사앞");
-		WritePrivateProfileString(sSection, sKey, sValue, sFileName);
-	}
 }
 
 
