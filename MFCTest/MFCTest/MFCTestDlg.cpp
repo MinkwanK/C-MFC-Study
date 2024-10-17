@@ -94,6 +94,7 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SET_ITSENSE_DIR, &CMFCTestDlg::OnBnClickedButtonSetItsenseDir)
 	ON_BN_CLICKED(IDC_BUTTON_MAKE_ITSENS_FOLDER, &CMFCTestDlg::OnBnClickedButtonMakeItsensFolder)
 	ON_BN_CLICKED(IDC_BUTTON_ITAGENT, &CMFCTestDlg::OnBnClickedButtonItagent)
+	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE_BOOST, &CMFCTestDlg::OnBnClickedButtonCreateEnforceFileBoost)
 END_MESSAGE_MAP()
 
 
@@ -154,6 +155,10 @@ BOOL CMFCTestDlg::OnInitDialog()
 	}
 
 	m_hStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	GetDlgItem(IDC_EDIT_FILE_CNT)->SetWindowText(_T("1"));
+	GetDlgItem(IDC_EDIT_MIN)->SetWindowText(_T("1"));
+	GetDlgItem(IDC_EDIT_MAX)->SetWindowText(_T("10"));
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -615,12 +620,14 @@ void CMFCTestDlg::CreateEnforceFileProc()
 	CFileDialog dlg(TRUE, _T("*.DAT"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
 	dlg.GetOFN().lpstrTitle = _T("생성할 TEMS 단속 파일 선택");
 	CString sPath, sFileName, sCopyPath;
-	CString sMin, sMax;
-	int iMin, iMax, iCnt = 0;
+	CString sMin, sMax, sFileCnt;
+	int iMin, iMax, iCnt, iFileCnt = 0;
 	GetDlgItem(IDC_EDIT_MIN)->GetWindowText(sMin);
 	GetDlgItem(IDC_EDIT_MAX)->GetWindowText(sMax);
+	GetDlgItem(IDC_EDIT_FILE_CNT)->GetWindowText(sFileCnt);
 	iMin = _ttoi(sMin);
 	iMax = _ttoi(sMax);
+	iFileCnt = _ttoi(sFileCnt);
 
 	if (dlg.DoModal() == IDOK)
 	{
@@ -638,26 +645,98 @@ void CMFCTestDlg::CreateEnforceFileProc()
 					m_bMakingFile = FALSE;
 					return;
 				}
-				CString sCode,sDate;
-				SYSTEMTIME st;
-				sCode.Format(_T("G%04d"), i);
-				sTemp = sFileName.Left(3);
-				sTemp += sCode + _T("_");
-				GetLocalTime(&st);
-				sDate.Format(_T("%04d%02d%02d%02d%02d%02d%03d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-				sTemp += sDate + _T("_");
-				sTemp += sFileName.Mid(27, 2) + _T("_");
-				sTemp += sFileName.Right(2) + _T(".DAT");
-				
-				sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
-				if (CopyFile(sPath, sCopyPath, 1))
+				for (int j = 0; j < iFileCnt; j++)
 				{
-					CString sMsg;
-					sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
-					int iSel = m_List.AddString(sMsg);
-					m_List.SetCurSel(iSel);
+					CString sCode, sDate;
+					SYSTEMTIME st;
+					sCode.Format(_T("G%04d"), i);
+					sTemp = sFileName.Left(3);
+					sTemp += sCode + _T("_");
+					GetLocalTime(&st);
+					sDate.Format(_T("%04d%02d%02d%02d%02d%02d%03d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+					sTemp += sDate + _T("_");
+					sTemp += sFileName.Mid(27, 2) + _T("_");
+					sTemp += sFileName.Right(2) + _T(".DAT");
+
+					sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
+					if (CopyFile(sPath, sCopyPath, 1))
+					{
+						CString sMsg;
+						sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
+						int iSel = m_List.AddString(sMsg);
+						m_List.SetCurSel(iSel);
+					}
+					m_bMakingFile = TRUE;
 				}
-				m_bMakingFile = TRUE;
+			}
+			if (!m_bMakingFile)
+				break;
+		}
+		m_bMakingFile = FALSE;
+	}
+}
+
+void CMFCTestDlg::CreateEnforceFileBoost(CMFCTestDlg* pDlg)
+{
+	if (pDlg)
+		pDlg->CreateEnforceFileBoostProc();
+}
+
+void CMFCTestDlg::CreateEnforceFileBoostProc()
+{
+	CString str = _T("단속 파일 (*.*)|*.*|"); // 모든 파일 표시
+	CFileDialog dlg(TRUE, _T("*.DAT"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
+	dlg.GetOFN().lpstrTitle = _T("생성할 TEMS 단속 파일 선택");
+	CString sPath, sFileName, sCopyPath;
+	CString sMin, sMax,sFileCnt;
+	int iMin, iMax, iCnt, iFileCnt = 0;
+	GetDlgItem(IDC_EDIT_MIN)->GetWindowText(sMin);
+	GetDlgItem(IDC_EDIT_MAX)->GetWindowText(sMax);
+	GetDlgItem(IDC_EDIT_FILE_CNT)->GetWindowText(sFileCnt);
+	iMin = _ttoi(sMin);
+	iMax = _ttoi(sMax);
+	iFileCnt = _ttoi(sFileCnt);
+
+	if (dlg.DoModal() == IDOK)
+	{
+		sPath = dlg.GetPathName();
+		sFileName = dlg.GetFileTitle();
+		while (TRUE)
+		{
+			DWORD dwResult = WaitForSingleObject(m_hStopEvent, 1000);
+			CString sTemp;
+			for (int i = iMin; i <= iMax; i++)
+			{
+				if (dwResult == WAIT_OBJECT_0)
+				{
+					m_List.AddString(_T("TEMS 제출 파일 생성(Boost) 스레드 종료"));
+					m_bMakingFile = FALSE;
+					return;
+				}
+
+				for (int j = 0; j < iFileCnt; j++)
+				{
+					CString sCode, sDate;
+					SYSTEMTIME st;
+					sCode.Format(_T("G%04d"), i);
+					sTemp = sFileName.Left(3);
+					sTemp += sCode + _T("_");
+					GetLocalTime(&st);
+					sDate.Format(_T("%04d%02d%02d%02d%02d%02d%03d"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+					sTemp += sDate + _T("_");
+					sTemp += sFileName.Mid(27, 2) + _T("_");
+					sTemp += sFileName.Right(2) + _T(".DAT");
+
+					sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
+					if (CopyFile(sPath, sCopyPath, 1))
+					{
+						CString sMsg;
+						sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
+						int iSel = m_List.AddString(sMsg);
+						m_List.SetCurSel(iSel);
+					}
+					m_bMakingFile = TRUE;
+				}
 			}
 			if (!m_bMakingFile)
 				break;
@@ -826,5 +905,19 @@ void CMFCTestDlg::OnBnClickedButtonItagent()
 			}
 
 		}
+	}
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonCreateEnforceFileBoost()
+{
+	if (!m_bMakingFile)
+	{
+		std::thread createFile(&CMFCTestDlg::CreateEnforceFileBoost, this);
+		createFile.detach();
+	}
+	else
+	{
+		SetEvent(m_hStopEvent);
 	}
 }

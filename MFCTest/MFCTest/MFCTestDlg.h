@@ -58,6 +58,9 @@ public:
 	static void CreateEnforceFile(CMFCTestDlg* pDlg);
 	void CreateEnforceFileProc();
 
+	static void CreateEnforceFileBoost(CMFCTestDlg* pDlg);
+	void CreateEnforceFileBoostProc();
+
 	int CopyFolder(CString szFrom, CString szTo);
 
 public:
@@ -85,4 +88,5 @@ public:
 
 	afx_msg void OnBnClickedButtonMakeItsensFolder();
 	afx_msg void OnBnClickedButtonItagent();
+	afx_msg void OnBnClickedButtonCreateEnforceFileBoost();
 };
