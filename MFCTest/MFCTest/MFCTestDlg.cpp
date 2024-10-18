@@ -270,6 +270,7 @@ void CMFCTestDlg::OnPaint()
 			dc.BitBlt(rcClient.left, rcClient.top, rcClient.Width(), rcClient.Height(), pMemDC, rcClient.left, rcClient.top, SRCCOPY);
 		}
 
+		delete pMemDC;
 	}
 }
 
@@ -442,7 +443,7 @@ void CMFCTestDlg::OnBnClickedButtonNow()
 	//FileTimeToSystemTime(&fileTime, &stTime);
 	SetLocalTime(&stTime);
 	CString sTime;
-	sTime.Format(_T("GetLocalTime으로 편하게 시간을 구할 수 있다. %04d.%02d.%02d %02d:%02d:%02d>"), stTime.wYear, stTime.wMonth, stTime.wDay,stTime.wHour,stTime.wMinute,stTime.wSecond);
+	sTime.Format(_T("형변환 없이 GetLocalTime으로 편하게 시간을 구할 수 있다. %04d.%02d.%02d %02d:%02d:%02d>"), stTime.wYear, stTime.wMonth, stTime.wDay,stTime.wHour,stTime.wMinute,stTime.wSecond);
 	int iSel = m_List.AddString(sTime);
 	m_List.SetCurSel(iSel);
 
@@ -515,8 +516,16 @@ void CMFCTestDlg::CreateEnforceFileProc()
 					sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
 					if (CopyFile(sPath, sCopyPath, 1))
 					{
+						CFile file;
+						if (file.Open(sCopyPath, CFile::modeWrite))
+						{
+							file.Seek(25, CFile::begin);
+							file.Write(sDate, sDate.GetLength());
+							file.Close();
+						}
+
 						CString sMsg;
-						sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
+						sMsg.Format(_T("TEMS 제출 파일 생성 %d의 %d번째 : %s"), i, j, sTemp);
 						int iSel = m_List.AddString(sMsg);
 						m_List.SetCurSel(iSel);
 					}
@@ -568,7 +577,7 @@ void CMFCTestDlg::CreateEnforceFileBoostProc()
 					return;
 				}
 
-				for (int j = 0; j < iFileCnt; j++)
+				for (int j = 1; j <= iFileCnt; j++)
 				{
 					CString sCode, sDate;
 					SYSTEMTIME st;
@@ -584,8 +593,16 @@ void CMFCTestDlg::CreateEnforceFileBoostProc()
 					sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sTemp);
 					if (CopyFile(sPath, sCopyPath, 1))
 					{
+						CFile file;
+						if (file.Open(sCopyPath, CFile::modeWrite))
+						{
+							file.Seek(25, CFile::begin);
+							file.Write(sDate, sDate.GetLength());
+							file.Close();
+						}
+
 						CString sMsg;
-						sMsg.Format(_T("TEMS 제출 파일 생성: %s"), sTemp);
+						sMsg.Format(_T("TEMS 제출 파일 생성 %d의 %d번째 : %s"), i,j,sTemp);
 						int iSel = m_List.AddString(sMsg);
 						m_List.SetCurSel(iSel);
 					}
