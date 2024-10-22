@@ -5,8 +5,6 @@
 #pragma once
 #include "Animal.h"
 #include "Dog.h"
-#include "Person.h"
-#include "ScrollTest.h"
 // CMFCTestDlg 대화 상자
 class CMFCTestDlg : public CDialogEx
 {
@@ -47,6 +45,10 @@ public:
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedButtonSetSetupDir();
 	afx_msg void OnBnClickedButtonSetItsenseDir();
+	afx_msg void OnBnClickedButtonMakeItsensFolder();
+	afx_msg void OnBnClickedButtonItagent();
+	afx_msg void OnBnClickedButtonCreateEnforceFileBoost();
+	afx_msg void OnBnClickedButtonOpenSerial();
 	void Thread1();
 	void Thread2();
 	void Thread3();
@@ -58,6 +60,8 @@ public:
 	void CreateEnforceFileBoostProc();
 
 	int CopyFolder(CString szFrom, CString szTo);
+
+	void AddListBox(CString sMsg);
 
 public:
 	CProgressCtrl m_progress;
@@ -73,7 +77,6 @@ public:
 
 	int m_iDrawMode;
 	int m_iScroll;
-	CScrollTest* m_pScrollTest;
 	BOOL m_bMakingFile;
 	HANDLE m_hStopEvent;
 	CString m_sSetupPath;
@@ -81,8 +84,4 @@ public:
 
 	CStatic m_pic2;
 	CListBox m_List;
-
-	afx_msg void OnBnClickedButtonMakeItsensFolder();
-	afx_msg void OnBnClickedButtonItagent();
-	afx_msg void OnBnClickedButtonCreateEnforceFileBoost();
 };
