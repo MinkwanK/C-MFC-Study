@@ -797,22 +797,22 @@ void CMFCTestDlg::OnBnClickedButtonCreateEnforceFileBoost()
 
 void CMFCTestDlg::OnBnClickedButtonOpenSerial()
 {
-	CString sSerial;
+	CString sSerial, sMsg;
 	int iSerial;
 	GetDlgItem(IDC_EDIT_SERIAL)->GetWindowText(sSerial);
 	iSerial = _ttoi(sSerial);
-
 	sSerial.Format(_T("COM%d"), iSerial);
-	HANDLE hSerial = CreateFile(sSerial, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,0);
-	if (hSerial == INVALID_HANDLE_VALUE)
+
+	if(m_hSerial == NULL)
+	{ 
+	m_hSerial = CreateFile(sSerial, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,0);
+	if (m_hSerial == INVALID_HANDLE_VALUE)
 	{
-		CString sMsg;
 		sMsg.Format(_T("시리얼 포트 %s 를 열 수 없습니다."), sSerial);
 		AddListBox(sMsg);
 	}
 	else
 	{
-		CString sMsg;
 		sMsg.Format(_T("시리얼 포트 %s 를 열었습니다."), sSerial);
 		AddListBox(sMsg);
 
@@ -820,40 +820,41 @@ void CMFCTestDlg::OnBnClickedButtonOpenSerial()
 		DCB dcbSerialParams = { 0 };
 		dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
 
-		if (!GetCommState(hSerial, &dcbSerialParams))
+		if (!GetCommState(m_hSerial, &dcbSerialParams))
 		{
 			sMsg.Format(_T("시리얼 포트 % 상태 얻기 실패"), sSerial);
 			AddListBox(sMsg);
 		}
-		
+
 		dcbSerialParams.BaudRate = CBR_9600;
 		dcbSerialParams.ByteSize = 8;
 		dcbSerialParams.StopBits = ONESTOPBIT;
 		dcbSerialParams.Parity = NOPARITY;
 
-		if (!SetCommState(hSerial, &dcbSerialParams)) {
+		if (!SetCommState(m_hSerial, &dcbSerialParams)) {
 			sMsg.Format(_T("시리얼 포트 %s 상태 세팅 실패"), sSerial);
 			AddListBox(sMsg);
 		}
-
-		const char* msg = "Hello Serial";
+	}
+		CString sInput;
+		GetDlgItem(IDC_EDIT_STRING)->GetWindowText(sInput);
 		DWORD bytes_written;
-		if (!WriteFile(hSerial, msg, strlen(msg), &bytes_written, NULL))
+		if (!WriteFile(m_hSerial, sInput, sInput.GetLength(), &bytes_written, NULL))
 		{
 			sMsg.Format(_T("시리얼 포트 %s 쓰기 실패"), sSerial);
 			AddListBox(sMsg);
 		}
 		else
 		{
-			sMsg.Format(_T("시리얼 포트 %s 쓰기"), msg);
+			sMsg.Format(_T("시리얼 포트 %s 쓰기"), sInput);
 			AddListBox(sMsg);
 		}
 	}
 
-	if (hSerial != NULL)
+	if (m_hSerial != NULL)
 	{
-		CloseHandle(hSerial);
-		hSerial = NULL;
+		CloseHandle(m_hSerial);
+		m_hSerial = NULL;
 	}
 }
 

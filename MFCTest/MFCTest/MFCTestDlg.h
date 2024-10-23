@@ -84,4 +84,5 @@ public:
 
 	CStatic m_pic2;
 	CListBox m_List;
+	HANDLE m_hSerial;
 };
