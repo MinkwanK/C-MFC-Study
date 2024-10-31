@@ -49,6 +49,16 @@
 #define IDC_SPIN1                       1049
 #define IDC_BUTTON_OPEN_SERIAL          1050
 #define IDC_EDIT_SERIAL                 1051
+#define IDC_BUTTON_AUDIO_REFRESH        1052
+#define IDC_COMBO_AUDIO_TYPE            1053
+#define IDC_COMBO_AUDIO_TYPE2           1055
+#define IDC_BUTTON_PLAY_AUDIO_1         1056
+#define IDC_BUTTON_PLAY_AUDIO_2         1057
+#define IDC_BUTTON_PLAY_AUDIO_3         1058
+#define IDC_EDIT_DEVICE_ID              1059
+#define IDC_EDIT_DEVICE_ID2             1060
+#define IDC_BUTTON_LOAD_AUDIO           1061
+#define IDC_BUTTON_LOAD_AUDIO2          1062
 
 // Next default values for new objects
 // 
@@ -56,7 +66,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        135
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_CONTROL_VALUE         1063
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

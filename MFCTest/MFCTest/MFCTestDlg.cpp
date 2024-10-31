@@ -9,9 +9,18 @@
 #include "afxdialogex.h"
 #include <thread>
 #include <chrono>
+#include <mmdeviceapi.h>
+#include <endpointvolume.h>
+#include <comdef.h>
+#include <audioclient.h>
+#include <Functiondiscoverykeys_devpkey.h>
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
+#define REFTIMES_PER_SEC		10000000  
+#define SAMPLE_ADUIO_PATH		_T("audio.wav")		
+#pragma comment(lib, "ole32.lib")
 
 extern int m_iAge = 0;
 
@@ -57,6 +66,8 @@ CMFCTestDlg::CMFCTestDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDI_ICON1);
 	m_pData = nullptr;
+	m_bAudioPlaying = FALSE;
+	m_bAudioStop = FALSE;
 }
 
 void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
@@ -68,6 +79,8 @@ void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_STATIC_Pic, m_pic);
 	DDX_Control(pDX, IDC_STATIC_Pic2, m_pic2);
 	DDX_Control(pDX, IDC_LIST1, m_List);
+	DDX_Control(pDX, IDC_COMBO_AUDIO_TYPE, m_cmbAudioType);
+	DDX_Control(pDX, IDC_COMBO_AUDIO_TYPE2, m_cmbAudioType2);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
@@ -91,6 +104,14 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_ITAGENT, &CMFCTestDlg::OnBnClickedButtonItagent)
 	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE_BOOST, &CMFCTestDlg::OnBnClickedButtonCreateEnforceFileBoost)
 	ON_BN_CLICKED(IDC_BUTTON_OPEN_SERIAL, &CMFCTestDlg::OnBnClickedButtonOpenSerial)
+	ON_BN_CLICKED(IDC_BUTTON_AUDIO_REFRESH, &CMFCTestDlg::OnBnClickedButtonAudioRefresh)
+	ON_BN_CLICKED(IDC_BUTTON_PLAY_AUDIO_1, &CMFCTestDlg::OnBnClickedButtonPlayAudio1)
+	ON_BN_CLICKED(IDC_BUTTON_PLAY_AUDIO_2, &CMFCTestDlg::OnBnClickedButtonPlayAudio2)
+	ON_BN_CLICKED(IDC_BUTTON_PLAY_AUDIO_3, &CMFCTestDlg::OnBnClickedButtonPlayAudio3)
+	ON_CBN_SELCHANGE(IDC_COMBO_AUDIO_TYPE, &CMFCTestDlg::OnCbnSelchangeComboAudioType)
+	ON_CBN_SELCHANGE(IDC_COMBO_AUDIO_TYPE2, &CMFCTestDlg::OnCbnSelchangeComboAudioType2)
+	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO, &CMFCTestDlg::OnBnClickedButtonLoadAudio)
+	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO2, &CMFCTestDlg::OnBnClickedButtonLoadAudio2)
 END_MESSAGE_MAP()
 
 
@@ -139,6 +160,9 @@ BOOL CMFCTestDlg::OnInitDialog()
 	GetDlgItem(IDC_EDIT_FILE_CNT)->SetWindowText(_T("1"));
 	GetDlgItem(IDC_EDIT_MIN)->SetWindowText(_T("1"));
 	GetDlgItem(IDC_EDIT_MAX)->SetWindowText(_T("10"));
+
+	GetAudioOutputDevice();
+
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -863,3 +887,550 @@ void CMFCTestDlg::AddListBox(CString sMsg)
 	m_List.SetCurSel(iSel);
 }
 
+void CMFCTestDlg::PlayAudio(CMFCTestDlg* pDlg)
+{
+	if(pDlg)
+		pDlg->PlayAudioProc();
+}
+
+void CMFCTestDlg::PlayAudio2(CMFCTestDlg* pDlg)
+{
+	if (pDlg)
+		pDlg->PlayAudioProc2();
+}
+
+void CMFCTestDlg::PlayAudioProc2()
+{
+	do
+	{
+		CString sSelectedAudioDeviceID;
+		GetDlgItem(IDC_EDIT_DEVICE_ID2)->GetWindowText(sSelectedAudioDeviceID);
+
+		HRESULT hr = CoInitialize(nullptr);																				//COM 초기화
+		if (FAILED(hr))
+		{
+			return;
+		}
+
+		const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);											//COM 객체를 얻기 위한 아이디
+		const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
+
+		IMMDeviceEnumerator* pMMDeviceEnumerator = nullptr;																//컬렉션과 열거자 객체를 담기 위한 포인터 변수
+		IMMDeviceCollection* pMMDeviceCollection = nullptr;
+
+		hr = CoCreateInstance(
+			CLSID_MMDeviceEnumerator, nullptr,
+			CLSCTX_ALL, IID_IMMDeviceEnumerator,
+			(void**)&pMMDeviceEnumerator);																				//열거자 객체 생성, 첫번째 com의 UUID
+
+		if (FAILED(hr))
+		{
+			if (!pMMDeviceEnumerator)
+			{
+				pMMDeviceEnumerator->Release();
+			}
+			CoUninitialize();
+			return;
+		}
+
+		hr = pMMDeviceEnumerator->EnumAudioEndpoints(EDataFlow::eRender, DEVICE_STATE_ACTIVE, &pMMDeviceCollection);	//오디오 Collection Get
+
+		if (FAILED(hr))
+		{
+			if (!pMMDeviceEnumerator)
+			{
+				pMMDeviceEnumerator->Release();
+			}
+			if (!pMMDeviceCollection)
+			{
+				pMMDeviceCollection->Release();
+			}
+			CoUninitialize();
+			return;
+		}
+
+		UINT uiCount = 0;
+		pMMDeviceCollection->GetCount(&uiCount);																					//오디오 디바이스 개수 Get
+
+		for (int i = 0; i < uiCount; ++i)
+		{
+			IMMDevice* pDevice = nullptr;
+			pMMDeviceCollection->Item(i, &pDevice);
+
+			if (pDevice)
+			{
+				LPWSTR pwszID = nullptr;
+				hr = pDevice->GetId(&pwszID);
+				if (SUCCEEDED(hr))
+				{
+					CString sDeviceID(pwszID);
+
+					if (sSelectedAudioDeviceID == pwszID)
+					{
+
+						IAudioClient* pAudioClient = nullptr;
+						hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);				//오디오 클라이언트 Get
+
+						if (SUCCEEDED(hr) && pAudioClient)
+						{
+							REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;												//요청할 오디오 지속시간
+							hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE::AUDCLNT_SHAREMODE_EXCLUSIVE, 0, hnsRequestedDuration, 0, &m_wavFormat[1], nullptr);	//오디오 클라이언트 초기화
+							if (SUCCEEDED(hr))
+							{
+								IAudioRenderClient* pAudioRenderClient = nullptr;												//오디오 출력장치에 데이터 전달하고 버퍼 관리 역할 인터페이스
+								UINT32 bufferFrameCount;
+								pAudioClient->GetBufferSize(&bufferFrameCount);													//버퍼 크기 가져오기
+								hr = pAudioClient->GetService(__uuidof(IAudioRenderClient), (void**)&pAudioRenderClient);		//오디오 렌더링을 위한 인터페이스 요청
+
+								if (SUCCEEDED(hr) && pAudioRenderClient)
+								{
+									UINT32 numFramesAvailable = 0;
+									BYTE* pData;
+									pAudioClient->Start();																		//오디오 클라이언트 시작
+									size_t iOffset = 0;																			//오디오 데이터 오프셋 초기화
+
+
+									while (iOffset < m_iAudioDataSize[1] && !m_bAudioStop)
+									{
+										pAudioClient->GetCurrentPadding(&numFramesAvailable);									//현재 패딩(아직 출력되지 않은 오디오 프레임 수)
+										numFramesAvailable = bufferFrameCount - numFramesAvailable;								//사용 가능 프레임 수 계산
+
+										pAudioRenderClient->GetBuffer(numFramesAvailable, &pData);								//렌더 클라이언트에서 버퍼 가져오기
+										memcpy(pData, m_pAudioData[1] + iOffset, numFramesAvailable * m_wavFormat[1].nBlockAlign);    //사용 가능 프레임 * 한 오디오 프레임이 차지하는 바이트수 만큼을 복사
+										iOffset += numFramesAvailable * m_wavFormat[1].nBlockAlign;								//오프셋 증가
+										pAudioRenderClient->ReleaseBuffer(numFramesAvailable, 0);								//사용완료한 버퍼 release
+									}
+									pAudioClient->Stop();
+									pAudioRenderClient->Release();
+								}
+							}
+						}
+						pAudioClient->Release();
+					}
+					pDevice->Release();
+				}
+			}
+		}
+
+		pMMDeviceCollection->Release();
+		pMMDeviceEnumerator->Release();
+		CoUninitialize();
+	} while (FALSE);
+
+	m_bAudioPlaying = FALSE;
+}
+
+void CMFCTestDlg::GetDeviceID(int iComboBox)
+{
+	int iSel = -1;
+	if (iComboBox == 1)
+	{
+		iSel = m_cmbAudioType.GetCurSel();
+	}
+	else if (iComboBox == 2)
+	{
+		iSel = m_cmbAudioType2.GetCurSel();
+	}
+
+	HRESULT hr = CoInitialize(nullptr); //COM 초기화
+
+	if (FAILED(hr))
+	{
+		return;
+	}
+
+	const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);	//COM 객체를 얻기 위한 아이디
+	const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
+
+	IMMDeviceEnumerator* pMMDeviceEnumerator = nullptr;	//컬렉션과 열거자 객체를 담기 위한 포인터 변수
+	IMMDeviceCollection* pMMDeviceCollection = nullptr;
+
+	hr = CoCreateInstance(
+		CLSID_MMDeviceEnumerator, nullptr,
+		CLSCTX_ALL, IID_IMMDeviceEnumerator,
+		(void**)&pMMDeviceEnumerator);	//열거자 객체 생성, 첫번째 com의 UUID
+
+	if (FAILED(hr))
+	{
+		if (!pMMDeviceEnumerator)
+		{
+			pMMDeviceEnumerator->Release();
+		}
+		CoUninitialize();
+		return;
+	}
+
+	hr = pMMDeviceEnumerator->EnumAudioEndpoints(EDataFlow::eRender, DEVICE_STATE_ACTIVE, &pMMDeviceCollection);	//오디오 Collection Get
+
+	if (FAILED(hr))
+	{
+		if (!pMMDeviceEnumerator)
+		{
+			pMMDeviceEnumerator->Release();
+		}
+		if (!pMMDeviceCollection)
+		{
+			pMMDeviceCollection->Release();
+		}
+		CoUninitialize();
+		return;
+	}
+
+	UINT uiCount = 0;
+	pMMDeviceCollection->GetCount(&uiCount);	//오디오 디바이스 개수 Get
+
+	if (uiCount > iSel)
+	{
+		IMMDevice* pDevice = nullptr;
+		IPropertyStore* pProperty = nullptr;
+		PROPVARIANT value{};
+		pMMDeviceCollection->Item(iSel, &pDevice);
+
+		if (pDevice)
+		{
+			LPWSTR pwszID = nullptr;
+			hr = pDevice->GetId(&pwszID);
+			if (SUCCEEDED(hr))
+			{
+				CString sDevice;
+				sDevice.Format(_T("%S"), pwszID);
+				if(iComboBox == 1)
+					GetDlgItem(IDC_EDIT_DEVICE_ID)->SetWindowText(sDevice);
+				else if(iComboBox == 2)
+					GetDlgItem(IDC_EDIT_DEVICE_ID2)->SetWindowText(sDevice);
+				pDevice->Release();
+				CoTaskMemFree(pwszID);
+			}
+		}
+
+		PropVariantClear(&value);
+	}
+
+	pMMDeviceCollection->Release();
+	pMMDeviceEnumerator->Release();
+	CoUninitialize();
+}
+
+void CMFCTestDlg::PlayAudioProc()
+{
+	do
+	{
+		CString sSelectedAudioDeviceID;
+		GetDlgItem(IDC_EDIT_DEVICE_ID)->GetWindowText(sSelectedAudioDeviceID);
+
+		HRESULT hr = CoInitialize(nullptr);																				//COM 초기화
+		if (FAILED(hr))
+		{
+			return;
+		}
+
+		const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);											//COM 객체를 얻기 위한 아이디
+		const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
+
+		IMMDeviceEnumerator* pMMDeviceEnumerator = nullptr;																//컬렉션과 열거자 객체를 담기 위한 포인터 변수
+		IMMDeviceCollection* pMMDeviceCollection = nullptr;
+
+		hr = CoCreateInstance(
+			CLSID_MMDeviceEnumerator, nullptr,
+			CLSCTX_ALL, IID_IMMDeviceEnumerator,
+			(void**)&pMMDeviceEnumerator);																				//열거자 객체 생성, 첫번째 com의 UUID
+
+		if (FAILED(hr))
+		{
+			if (!pMMDeviceEnumerator)
+			{
+				pMMDeviceEnumerator->Release();
+			}
+			CoUninitialize();
+			return;
+		}
+
+		hr = pMMDeviceEnumerator->EnumAudioEndpoints(EDataFlow::eRender, DEVICE_STATE_ACTIVE, &pMMDeviceCollection);	//오디오 Collection Get
+
+		if (FAILED(hr))
+		{
+			if (!pMMDeviceEnumerator)
+			{
+				pMMDeviceEnumerator->Release();
+			}
+			if (!pMMDeviceCollection)
+			{
+				pMMDeviceCollection->Release();
+			}
+			CoUninitialize();
+			return;
+		}
+
+		UINT uiCount = 0;
+		pMMDeviceCollection->GetCount(&uiCount);																					//오디오 디바이스 개수 Get
+
+		for (int i = 0; i < uiCount; ++i)
+		{
+			IMMDevice* pDevice = nullptr;
+			pMMDeviceCollection->Item(i, &pDevice);
+
+			if (pDevice)
+			{
+				LPWSTR pwszID = nullptr;
+				hr = pDevice->GetId(&pwszID);
+				if (SUCCEEDED(hr))
+				{
+					CString sDeviceID(pwszID);
+
+					if (sSelectedAudioDeviceID == pwszID)
+					{
+						
+						IAudioClient* pAudioClient = nullptr;
+						hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);				//오디오 클라이언트 Get
+
+						if (SUCCEEDED(hr) && pAudioClient)
+						{
+							REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;												//요청할 오디오 지속시간
+							hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE::AUDCLNT_SHAREMODE_EXCLUSIVE, 0, hnsRequestedDuration, 0, &m_wavFormat[0], nullptr);	//오디오 클라이언트 초기화
+							if (SUCCEEDED(hr))
+							{
+								IAudioRenderClient* pAudioRenderClient = nullptr;												//오디오 출력장치에 데이터 전달하고 버퍼 관리 역할 인터페이스
+								UINT32 bufferFrameCount;
+								pAudioClient->GetBufferSize(&bufferFrameCount);													//버퍼 크기 가져오기
+								hr = pAudioClient->GetService(__uuidof(IAudioRenderClient), (void**)&pAudioRenderClient);		//오디오 렌더링을 위한 인터페이스 요청
+
+								if (SUCCEEDED(hr) && pAudioRenderClient)
+								{
+									UINT32 numFramesAvailable = 0;
+									BYTE* pData;
+									pAudioClient->Start();																		//오디오 클라이언트 시작
+									size_t iOffset = 0;																			//오디오 데이터 오프셋 초기화
+
+								
+									while (iOffset < m_iAudioDataSize[0] && !m_bAudioStop)
+									{
+										pAudioClient->GetCurrentPadding(&numFramesAvailable);									//현재 패딩(아직 출력되지 않은 오디오 프레임 수)
+										numFramesAvailable = bufferFrameCount - numFramesAvailable;								//사용 가능 프레임 수 계산
+
+										pAudioRenderClient->GetBuffer(numFramesAvailable, &pData);								//렌더 클라이언트에서 버퍼 가져오기
+										memcpy(pData, m_pAudioData[0] + iOffset, numFramesAvailable * m_wavFormat[0].nBlockAlign);    //사용 가능 프레임 * 한 오디오 프레임이 차지하는 바이트수 만큼을 복사
+										iOffset += numFramesAvailable * m_wavFormat[0].nBlockAlign;								//오프셋 증가
+										pAudioRenderClient->ReleaseBuffer(numFramesAvailable, 0);								//사용완료한 버퍼 release
+									}
+									pAudioClient->Stop();
+									pAudioRenderClient->Release();
+								}
+							}
+						}
+						pAudioClient->Release();
+					}
+					pDevice->Release();
+				}
+			}
+		}
+
+		pMMDeviceCollection->Release();
+		pMMDeviceEnumerator->Release();
+		CoUninitialize();
+	} while (FALSE);
+
+	m_bAudioPlaying = FALSE;
+}
+
+
+
+void CMFCTestDlg::OnBnClickedButtonAudioRefresh()
+{
+	m_cmbAudioType.ResetContent();
+	m_cmbAudioType2.ResetContent();
+	GetAudioOutputDevice();
+}
+
+void CMFCTestDlg::GetAudioOutputDevice()
+{
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED); //com 초기화
+
+	if (FAILED(hr))
+	{
+		return;
+	}
+
+	const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);	//COM 객체를 얻기 위한 아이디
+	const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
+
+	IMMDeviceEnumerator* pMMDeviceEnumerator = nullptr;	//컬렉션과 열거자 객체를 담기 위한 포인터 변수
+	IMMDeviceCollection* pMMDeviceCollection = nullptr;
+
+	hr = CoCreateInstance(
+		CLSID_MMDeviceEnumerator, nullptr,
+		CLSCTX_ALL, IID_IMMDeviceEnumerator,
+		(void**)&pMMDeviceEnumerator);	//열거자 객체 생성, 첫번째 com의 UUID
+
+	if (FAILED(hr))
+	{
+		if (!pMMDeviceEnumerator)
+		{
+			pMMDeviceEnumerator->Release();
+		}
+		CoUninitialize();
+		return;
+	}
+
+	hr = pMMDeviceEnumerator->EnumAudioEndpoints(EDataFlow::eRender, DEVICE_STATE_ACTIVE, &pMMDeviceCollection);	//오디오 Collection Get
+
+	if (FAILED(hr))
+	{
+		if (!pMMDeviceEnumerator)
+		{
+			pMMDeviceEnumerator->Release();
+		}
+		if (!pMMDeviceCollection)
+		{
+			pMMDeviceCollection->Release();
+		}
+		CoUninitialize();
+		return;
+	}
+
+	UINT uiCount = 0;
+	pMMDeviceCollection->GetCount(&uiCount);	//오디오 디바이스 개수 Get
+
+	for (int i = 0; i < uiCount; ++i)
+	{
+		IMMDevice* pDevice = nullptr;
+		IPropertyStore* pProperty = nullptr;
+		PROPVARIANT value{};
+		pMMDeviceCollection->Item(i, &pDevice);
+
+		if (pDevice)
+		{
+			pDevice->OpenPropertyStore(STGM_READ, &pProperty);
+			pProperty->GetValue(PKEY_Device_FriendlyName, &value);
+			CString sDeviceName(value.pwszVal);
+			IAudioEndpointVolume* pEndpointVolume = nullptr;	//볼륨컨트롤 인터페이스 Get
+			pDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL, nullptr, (void**)&pEndpointVolume);
+
+			if (pEndpointVolume)
+			{
+				float fVolume = 0.0f;
+				int iVolume = 0;
+				hr = pEndpointVolume->GetMasterVolumeLevelScalar(&fVolume);	//볼륨 값 Get
+				if (SUCCEEDED(hr))
+				{
+					iVolume = fVolume * 100.0f;
+				}
+			
+
+
+				LPWSTR pwszID = nullptr;
+				hr = pDevice->GetId(&pwszID);								//디바이스 ID Get
+
+				if (SUCCEEDED(hr))
+				{
+					CString sDeviceID(pwszID);
+					CoTaskMemFree(pwszID);
+		
+
+					//모두 성공했기 때문에 반영
+					int iSel = m_cmbAudioType.AddString(sDeviceName);
+					m_cmbAudioType2.AddString(sDeviceName);
+					//m_cmbAudioType.SetItemData(iSel, sDeviceID);
+
+				}
+				pEndpointVolume->Release();
+			}
+
+			PropVariantClear(&value);
+			pDevice->Release();
+		}
+	}
+
+	pMMDeviceCollection->Release();
+	pMMDeviceEnumerator->Release();
+	CoUninitialize();
+}
+
+BOOL CMFCTestDlg::LoadWavFile(CString sFileName, int iOrder)
+{
+	CFile file;
+	BYTE header[44];
+	if (file.Open(sFileName, CFile::modeRead))
+	{
+		file.Read(header, 44);
+		/*
+			*reinterpret_cast<WORD*> 주어진 포인터를 WORD 타입 포인터로 형변환 후 역참조하여 값을 가져옴.
+			reinterpret_cast는 포인터를 다른 타입으로 변환할 때
+
+		*/
+		m_wavFormat[iOrder].wFormatTag = *reinterpret_cast<WORD*>(header + 20);			//PCM(비압축 오디오)의 경우 1
+		m_wavFormat[iOrder].nChannels = *reinterpret_cast<WORD*>(header + 22);			//오디어 데이터 채널 (Mono: 1 Stereo: 2)
+		m_wavFormat[iOrder].nSamplesPerSec = *reinterpret_cast<DWORD*>(header + 24);		//오디오 샘플링 주기 (초당 샘플 수, 높을수록 재생되는 오디오 주파수가 넓어지고 품질 향상
+		m_wavFormat[iOrder].nAvgBytesPerSec = *reinterpret_cast<DWORD*>(header + 28);	//초당 평균 바이트 수, 데이터 전송률
+		m_wavFormat[iOrder].nBlockAlign = *reinterpret_cast<WORD*>(header + 32);		//하나의 오디오 블록이 차지하는 바이트 수
+		m_wavFormat[iOrder].wBitsPerSample = *reinterpret_cast<WORD*>(header + 34);		//샘플당 비트 수 (스트레오 16비트)
+		m_wavFormat[iOrder].cbSize = 0;													//추가적인 사용자 정의 데이터
+
+		m_pAudioData[iOrder] = new BYTE[file.GetLength() - 44];
+		file.Read(m_pAudioData[iOrder], file.GetLength() - 44);
+		m_iAudioDataSize[iOrder] = file.GetLength() - 44;
+		file.Close();
+		return TRUE;
+	}
+	return FALSE;
+}
+
+void CMFCTestDlg::OnBnClickedButtonPlayAudio1()
+{
+	std::thread t1(&CMFCTestDlg::PlayAudio, this);
+	t1.detach();
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonPlayAudio2()
+{
+	std::thread t2(&CMFCTestDlg::PlayAudio2, this);
+	t2.detach();
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonPlayAudio3()
+{
+	std::thread t1(&CMFCTestDlg::PlayAudio, this);
+	t1.detach();
+
+	std::thread t2(&CMFCTestDlg::PlayAudio2, this);
+	t2.detach();
+}
+
+
+void CMFCTestDlg::OnCbnSelchangeComboAudioType()
+{
+	GetDeviceID(1);
+}
+
+
+void CMFCTestDlg::OnCbnSelchangeComboAudioType2()
+{
+	GetDeviceID(2);
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonLoadAudio()
+{
+	CString sFilter = _T("오디오 파일 (*.wav) | *.wav;||");
+	CFileDialog dlg(TRUE, _T(""), _T(""), OFN_HIDEREADONLY, sFilter, NULL, 0, 0);
+
+	if (dlg.DoModal())
+	{
+		CString sPath = dlg.GetPathName();
+		LoadWavFile(sPath,0);
+	}
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonLoadAudio2()
+{
+	CString sFilter = _T("오디오 파일 (*.wav) | *.wav;||");
+	CFileDialog dlg(TRUE, _T(""), _T(""), OFN_HIDEREADONLY, sFilter, NULL, 0, 0);
+
+	if (dlg.DoModal())
+	{
+		CString sPath = dlg.GetPathName();
+		LoadWavFile(sPath,1);
+	}
+}

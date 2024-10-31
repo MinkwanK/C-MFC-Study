@@ -5,6 +5,9 @@
 #pragma once
 #include "Animal.h"
 #include "Dog.h"
+#include <mmsystem.h>
+
+#pragma comment(lib, "winmm.lib")
 // CMFCTestDlg 대화 상자
 class CMFCTestDlg : public CDialogEx
 {
@@ -63,6 +66,14 @@ public:
 
 	void AddListBox(CString sMsg);
 
+	static void PlayAudio(CMFCTestDlg* pDlg);
+	void PlayAudioProc();
+
+	static void PlayAudio2(CMFCTestDlg* pDlg);
+	void PlayAudioProc2();
+
+	void GetDeviceID(int iComboBox);
+
 public:
 	CProgressCtrl m_progress;
 	CProgressCtrl m_progress2;
@@ -82,6 +93,24 @@ public:
 	CString m_sSetupPath;
 	CString m_sITSensPath;
 
+	WAVEFORMATEX m_wavFormat[2];
+	BYTE* m_pAudioData[2];
+	int m_iAudioDataSize[2];
+	BOOL m_bAudioStop;			//오디오 중지 
+	BOOL m_bAudioPlaying;		//오디오 플레이 중?
+
 	CStatic m_pic2;
 	CListBox m_List;
+	CComboBox m_cmbAudioType;
+	afx_msg void OnBnClickedButtonAudioRefresh();
+	void GetAudioOutputDevice();
+	BOOL LoadWavFile(CString sFileName,int iOrder);
+	afx_msg void OnBnClickedButtonPlayAudio1();
+	afx_msg void OnBnClickedButtonPlayAudio2();
+	afx_msg void OnBnClickedButtonPlayAudio3();
+	CComboBox m_cmbAudioType2;
+	afx_msg void OnCbnSelchangeComboAudioType();
+	afx_msg void OnCbnSelchangeComboAudioType2();
+	afx_msg void OnBnClickedButtonLoadAudio();
+	afx_msg void OnBnClickedButtonLoadAudio2();
 };
