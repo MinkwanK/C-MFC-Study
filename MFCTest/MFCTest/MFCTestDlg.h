@@ -101,7 +101,9 @@ public:
 
 	CStatic m_pic2;
 	CListBox m_List;
-	CComboBox m_cmbAudioType;
+   HANDLE m_hSerial;
+   
+   	CComboBox m_cmbAudioType;
 	afx_msg void OnBnClickedButtonAudioRefresh();
 	void GetAudioOutputDevice();
 	BOOL LoadWavFile(CString sFileName,int iOrder);
