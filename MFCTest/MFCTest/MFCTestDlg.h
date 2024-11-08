@@ -8,6 +8,8 @@
 #include <mmsystem.h>
 
 #pragma comment(lib, "winmm.lib")
+
+
 // CMFCTestDlg 대화 상자
 class CMFCTestDlg : public CDialogEx
 {
@@ -44,7 +46,7 @@ public:
 	afx_msg void OnBnClickedButtonKorean();
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnBnClickedButtonNow();
-	afx_msg void OnBnClickedButtonCreateEnforceFile();
+	afx_msg void OnBnClickedButtonCreateTemsFile();
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedButtonSetSetupDir();
 	afx_msg void OnBnClickedButtonSetItsenseDir();
@@ -56,11 +58,11 @@ public:
 	void Thread2();
 	void Thread3();
 
-	static void CreateEnforceFile(CMFCTestDlg* pDlg);
-	void CreateEnforceFileProc();
+	static void CreateTemsFile(CMFCTestDlg* pDlg);
+	void CreateTemsFileProc();
 
-	static void CreateEnforceFileBoost(CMFCTestDlg* pDlg);
-	void CreateEnforceFileBoostProc();
+	static void CreateTemsFileBoost(CMFCTestDlg* pDlg);
+	void CreateTemsFileBoostProc();
 
 	int CopyFolder(CString szFrom, CString szTo);
 
@@ -73,6 +75,10 @@ public:
 	void PlayAudioProc2();
 
 	void GetDeviceID(int iComboBox);
+
+
+	static void CreateEnforceFile(CMFCTestDlg* pDlg);
+	void CreateEnforceFileProc();
 
 public:
 	CProgressCtrl m_progress;
@@ -88,8 +94,10 @@ public:
 
 	int m_iDrawMode;
 	int m_iScroll;
-	BOOL m_bMakingFile;
-	HANDLE m_hStopEvent;
+	BOOL m_bMakingTems;
+	BOOL m_bMakingEnforce;
+	HANDLE m_hStopTems;
+	HANDLE m_hStopEnforce;
 	CString m_sSetupPath;
 	CString m_sITSensPath;
 
@@ -115,4 +123,6 @@ public:
 	afx_msg void OnCbnSelchangeComboAudioType2();
 	afx_msg void OnBnClickedButtonLoadAudio();
 	afx_msg void OnBnClickedButtonLoadAudio2();
+	afx_msg void OnBnClickedButtonMakeEnforce();
+	CEdit m_edCode;
 };

@@ -68,6 +68,8 @@ CMFCTestDlg::CMFCTestDlg(CWnd* pParent /*=nullptr*/)
 	m_pData = nullptr;
 	m_bAudioPlaying = FALSE;
 	m_bAudioStop = FALSE;
+	m_bMakingEnforce = FALSE;
+	m_bMakingTems = FALSE;
 }
 
 void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
@@ -81,6 +83,7 @@ void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST1, m_List);
 	DDX_Control(pDX, IDC_COMBO_AUDIO_TYPE, m_cmbAudioType);
 	DDX_Control(pDX, IDC_COMBO_AUDIO_TYPE2, m_cmbAudioType2);
+	DDX_Control(pDX, IDC_EDIT_CODE, m_edCode);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
@@ -96,7 +99,7 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_KOREAN, &CMFCTestDlg::OnBnClickedButtonKorean)
 	ON_WM_MOUSEWHEEL()
 	ON_BN_CLICKED(IDC_BUTTON_NOW, &CMFCTestDlg::OnBnClickedButtonNow)
-	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE, &CMFCTestDlg::OnBnClickedButtonCreateEnforceFile)
+	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE, &CMFCTestDlg::OnBnClickedButtonCreateTemsFile)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_BUTTON_SET_SETUP_DIR, &CMFCTestDlg::OnBnClickedButtonSetSetupDir)
 	ON_BN_CLICKED(IDC_BUTTON_SET_ITSENSE_DIR, &CMFCTestDlg::OnBnClickedButtonSetItsenseDir)
@@ -112,6 +115,7 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_COMBO_AUDIO_TYPE2, &CMFCTestDlg::OnCbnSelchangeComboAudioType2)
 	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO, &CMFCTestDlg::OnBnClickedButtonLoadAudio)
 	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO2, &CMFCTestDlg::OnBnClickedButtonLoadAudio2)
+	ON_BN_CLICKED(IDC_BUTTON_MAKE_ENFORCE, &CMFCTestDlg::OnBnClickedButtonMakeEnforce)
 END_MESSAGE_MAP()
 
 
@@ -155,7 +159,8 @@ BOOL CMFCTestDlg::OnInitDialog()
 	GetDlgItem(IDC_EDIT_STRING)->SetWindowText(_T("안녕하세요"));
 
 
-	m_hStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hStopTems = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hStopEnforce = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	GetDlgItem(IDC_EDIT_FILE_CNT)->SetWindowText(_T("1"));
 	GetDlgItem(IDC_EDIT_MIN)->SetWindowText(_T("1"));
@@ -474,26 +479,40 @@ void CMFCTestDlg::OnBnClickedButtonNow()
 }
 
 
-void CMFCTestDlg::OnBnClickedButtonCreateEnforceFile()
+void CMFCTestDlg::OnBnClickedButtonCreateTemsFile()
 {
-	if (!m_bMakingFile)
+	if (!m_bMakingTems)
+	{
+		std::thread createFile(&CMFCTestDlg::CreateTemsFile, this);
+		createFile.detach();
+	}
+	else
+	{
+		SetEvent(m_hStopTems);
+	}
+}
+
+void CMFCTestDlg::OnBnClickedButtonMakeEnforce()
+{
+	if (!m_bMakingEnforce)
 	{
 		std::thread createFile(&CMFCTestDlg::CreateEnforceFile, this);
 		createFile.detach();
 	}
 	else
 	{
-		SetEvent(m_hStopEvent);
+		SetEvent(m_hStopEnforce);
 	}
 }
 
-void CMFCTestDlg::CreateEnforceFile(CMFCTestDlg* pDlg)
+
+void CMFCTestDlg::CreateTemsFile(CMFCTestDlg* pDlg)
 {
 	if (pDlg)
-		pDlg->CreateEnforceFileProc();
+		pDlg->CreateTemsFileProc();
 }
 
-void CMFCTestDlg::CreateEnforceFileProc()
+void CMFCTestDlg::CreateTemsFileProc()
 {
 	CString str = _T("단속 파일 (*.*)|*.*|"); // 모든 파일 표시
 	CFileDialog dlg(TRUE, _T("*.DAT"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
@@ -517,11 +536,11 @@ void CMFCTestDlg::CreateEnforceFileProc()
 			CString sTemp;
 			for (int i = iMin; i <= iMax; i++)
 			{
-				DWORD dwResult = WaitForSingleObject(m_hStopEvent, 1000);
+				DWORD dwResult = WaitForSingleObject(m_hStopTems, 1000);
 				if (dwResult == WAIT_OBJECT_0)
 				{
 					m_List.AddString(_T("TEMS 제출 파일 생성 스레드 종료"));
-					m_bMakingFile = FALSE;
+					m_bMakingTems = FALSE;
 					return;
 				}
 				for (int j = 0; j < iFileCnt; j++)
@@ -553,23 +572,23 @@ void CMFCTestDlg::CreateEnforceFileProc()
 						int iSel = m_List.AddString(sMsg);
 						m_List.SetCurSel(iSel);
 					}
-					m_bMakingFile = TRUE;
+					m_bMakingTems = TRUE;
 				}
 			}
-			if (!m_bMakingFile)
+			if (!m_bMakingTems)
 				break;
 		}
-		m_bMakingFile = FALSE;
+		m_bMakingTems = FALSE;
 	}
 }
 
-void CMFCTestDlg::CreateEnforceFileBoost(CMFCTestDlg* pDlg)
+void CMFCTestDlg::CreateTemsFileBoost(CMFCTestDlg* pDlg)
 {
 	if (pDlg)
-		pDlg->CreateEnforceFileBoostProc();
+		pDlg->CreateTemsFileBoostProc();
 }
 
-void CMFCTestDlg::CreateEnforceFileBoostProc()
+void CMFCTestDlg::CreateTemsFileBoostProc()
 {
 	CString str = _T("단속 파일 (*.*)|*.*|"); // 모든 파일 표시
 	CFileDialog dlg(TRUE, _T("*.DAT"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
@@ -590,14 +609,14 @@ void CMFCTestDlg::CreateEnforceFileBoostProc()
 		sFileName = dlg.GetFileTitle();
 		while (TRUE)
 		{
-			DWORD dwResult = WaitForSingleObject(m_hStopEvent, 1000);
+			DWORD dwResult = WaitForSingleObject(m_hStopTems, 1000);
 			CString sTemp;
 			for (int i = iMin; i <= iMax; i++)
 			{
 				if (dwResult == WAIT_OBJECT_0)
 				{
 					m_List.AddString(_T("TEMS 제출 파일 생성(Boost) 스레드 종료"));
-					m_bMakingFile = FALSE;
+					m_bMakingTems = FALSE;
 					return;
 				}
 
@@ -630,13 +649,13 @@ void CMFCTestDlg::CreateEnforceFileBoostProc()
 						int iSel = m_List.AddString(sMsg);
 						m_List.SetCurSel(iSel);
 					}
-					m_bMakingFile = TRUE;
+					m_bMakingTems = TRUE;
 				}
 			}
-			if (!m_bMakingFile)
+			if (!m_bMakingTems)
 				break;
 		}
-		m_bMakingFile = FALSE;
+		m_bMakingTems = FALSE;
 	}
 }
 
@@ -807,14 +826,14 @@ void CMFCTestDlg::OnBnClickedButtonItagent()
 
 void CMFCTestDlg::OnBnClickedButtonCreateEnforceFileBoost()
 {
-	if (!m_bMakingFile)
+	if (!m_bMakingTems)
 	{
-		std::thread createFile(&CMFCTestDlg::CreateEnforceFileBoost, this);
+		std::thread createFile(&CMFCTestDlg::CreateTemsFileBoost, this);
 		createFile.detach();
 	}
 	else
 	{
-		SetEvent(m_hStopEvent);
+		SetEvent(m_hStopTems);
 	}
 }
 
@@ -1110,6 +1129,59 @@ void CMFCTestDlg::GetDeviceID(int iComboBox)
 	pMMDeviceCollection->Release();
 	pMMDeviceEnumerator->Release();
 	CoUninitialize();
+}
+
+void CMFCTestDlg::CreateEnforceFile(CMFCTestDlg* pDlg)
+{
+	if (pDlg)
+		pDlg->CreateEnforceFileProc();
+}
+
+void CMFCTestDlg::CreateEnforceFileProc()
+{
+	CString str = _T("단속 파일 (*.*)|*.*|"); // 모든 파일 표시
+	CFileDialog dlg(TRUE, _T("*.*"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
+	dlg.GetOFN().lpstrTitle = _T("생성할 단속 파일 선택");
+	CString sPath, sFileName, sCopyPath, sCode;
+	GetDlgItem(IDC_EDIT_CODE)->GetWindowText(sCode);
+	if (dlg.DoModal() == IDOK)
+	{
+		sPath = dlg.GetPathName();
+		sFileName = dlg.GetFileTitle();
+		while (TRUE)
+		{	
+			DWORD dwResult = WaitForSingleObject(m_hStopEnforce, 100);
+			if (dwResult == WAIT_OBJECT_0)
+			{
+				m_List.AddString(_T("ENFORCE 제출 파일 생성 스레드 종료"));
+				m_bMakingEnforce = FALSE;
+				return;
+			}
+		
+			CString sEnforceFileName;
+			CString sLane;
+			sLane = sFileName.Mid(17, 2);
+			SYSTEMTIME st;
+			GetLocalTime(&st);
+			sEnforceFileName.Format(_T("%04d%02d%02d%02d%02d%02d%03d%s.%s"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,sLane, sCode );
+
+			sCopyPath.Format(_T("D:\\ITSens\\Pass\\%s"), sEnforceFileName);
+			if(CopyFile(sPath, sCopyPath, 1))
+			{
+				
+				CString sMsg;
+				sMsg.Format(_T("ENFORCE 파일 생성: %s"), sEnforceFileName);
+				int iSel = m_List.AddString(sMsg);
+				m_List.SetCurSel(iSel);
+			}
+			m_bMakingEnforce = TRUE;
+			
+			
+			if (!m_bMakingEnforce)
+				break;
+		}
+		m_bMakingEnforce = FALSE;
+	}
 }
 
 void CMFCTestDlg::PlayAudioProc()
@@ -1435,3 +1507,5 @@ void CMFCTestDlg::OnBnClickedButtonLoadAudio2()
 		LoadWavFile(sPath,1);
 	}
 }
+
+
