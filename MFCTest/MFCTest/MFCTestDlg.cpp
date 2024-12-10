@@ -105,7 +105,7 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SET_ITSENSE_DIR, &CMFCTestDlg::OnBnClickedButtonSetItsenseDir)
 	ON_BN_CLICKED(IDC_BUTTON_MAKE_ITSENS_FOLDER, &CMFCTestDlg::OnBnClickedButtonMakeItsensFolder)
 	ON_BN_CLICKED(IDC_BUTTON_ITAGENT, &CMFCTestDlg::OnBnClickedButtonItagent)
-	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE_BOOST, &CMFCTestDlg::OnBnClickedButtonCreateEnforceFileBoost)
+	ON_BN_CLICKED(IDC_BUTTON_CREATE_TEMS_FILE, &CMFCTestDlg::OnBnClickedButtonCreateEnforceFileBoost)
 	ON_BN_CLICKED(IDC_BUTTON_OPEN_SERIAL, &CMFCTestDlg::OnBnClickedButtonOpenSerial)
 	ON_BN_CLICKED(IDC_BUTTON_AUDIO_REFRESH, &CMFCTestDlg::OnBnClickedButtonAudioRefresh)
 	ON_BN_CLICKED(IDC_BUTTON_PLAY_AUDIO_1, &CMFCTestDlg::OnBnClickedButtonPlayAudio1)
@@ -115,7 +115,8 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_COMBO_AUDIO_TYPE2, &CMFCTestDlg::OnCbnSelchangeComboAudioType2)
 	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO, &CMFCTestDlg::OnBnClickedButtonLoadAudio)
 	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO2, &CMFCTestDlg::OnBnClickedButtonLoadAudio2)
-	ON_BN_CLICKED(IDC_BUTTON_MAKE_ENFORCE, &CMFCTestDlg::OnBnClickedButtonMakeEnforce)
+	ON_BN_CLICKED(IDC_BUTTON_MAKE_ENFORCE_FILE, &CMFCTestDlg::OnBnClickedButtonMakeEnforce)
+	ON_BN_CLICKED(IDC_BUTTON_LOOP_LIST, &CMFCTestDlg::OnBnClickedButtonLoopList)
 END_MESSAGE_MAP()
 
 
@@ -168,6 +169,7 @@ BOOL CMFCTestDlg::OnInitDialog()
 
 	GetAudioOutputDevice();
 
+	HANDLE hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -1142,12 +1144,12 @@ void CMFCTestDlg::CreateEnforceFileProc()
 	CString str = _T("단속 파일 (*.*)|*.*|"); // 모든 파일 표시
 	CFileDialog dlg(TRUE, _T("*.*"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, str, this);
 	dlg.GetOFN().lpstrTitle = _T("생성할 단속 파일 선택");
-	CString sPath, sFileName, sCopyPath, sCode;
-	GetDlgItem(IDC_EDIT_CODE)->GetWindowText(sCode);
+	CString sPath,sName,sExt,sCopyPath;
 	if (dlg.DoModal() == IDOK)
 	{
 		sPath = dlg.GetPathName();
-		sFileName = dlg.GetFileTitle();
+		sName = dlg.GetFileTitle();
+		sExt = dlg.GetFileExt();
 		while (TRUE)
 		{	
 			DWORD dwResult = WaitForSingleObject(m_hStopEnforce, 100);
@@ -1160,17 +1162,26 @@ void CMFCTestDlg::CreateEnforceFileProc()
 		
 			CString sEnforceFileName;
 			CString sLane;
-			sLane = sFileName.Mid(17, 2);
+			sLane = sName.Mid(17, 2);
 			SYSTEMTIME st;
 			GetLocalTime(&st);
-			sEnforceFileName.Format(_T("%04d%02d%02d%02d%02d%02d%03d%s.%s"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,sLane, sCode );
+			sEnforceFileName.Format(_T("%04d%02d%02d%02d%02d%02d%03d%s.%s"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,sLane, sExt);
 
 			sCopyPath.Format(_T("D:\\ITSens\\Pass\\%s"), sEnforceFileName);
 			if(CopyFile(sPath, sCopyPath, 1))
 			{
 				
 				CString sMsg;
-				sMsg.Format(_T("ENFORCE 파일 생성: %s"), sEnforceFileName);
+				sMsg.Format(_T("ENFORCE 파일 생성(PASS 경로): %s"), sEnforceFileName);
+				int iSel = m_List.AddString(sMsg);
+				m_List.SetCurSel(iSel);
+			}
+			sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sEnforceFileName);
+			if (CopyFile(sPath, sCopyPath, 1))
+			{
+
+				CString sMsg;
+				sMsg.Format(_T("ENFORCE 파일 생성(ENFORCE 경로): %s"), sEnforceFileName);
 				int iSel = m_List.AddString(sMsg);
 				m_List.SetCurSel(iSel);
 			}
@@ -1509,3 +1520,13 @@ void CMFCTestDlg::OnBnClickedButtonLoadAudio2()
 }
 
 
+
+
+void CMFCTestDlg::OnBnClickedButtonLoopList()
+{
+	for (int i = 0; i < 10000; i++)
+	{
+		int iSel = m_List.AddString(_T("TEST"));
+		m_List.SetCurSel(iSel);
+	}
+}

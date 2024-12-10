@@ -125,4 +125,5 @@ public:
 	afx_msg void OnBnClickedButtonLoadAudio2();
 	afx_msg void OnBnClickedButtonMakeEnforce();
 	CEdit m_edCode;
+	afx_msg void OnBnClickedButtonLoopList();
 };
