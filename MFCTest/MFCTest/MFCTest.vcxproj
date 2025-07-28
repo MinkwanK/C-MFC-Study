@@ -211,6 +211,7 @@
     <None Include="res\MFCTest.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\direction_straight.ico" />
     <Image Include="res\Dog_icon.ico" />
     <Image Include="res\icon1.ico" />
     <Image Include="res\MFCTest.ico" />

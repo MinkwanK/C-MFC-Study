@@ -74,31 +74,22 @@ CMFCTestDlg::CMFCTestDlg(CWnd* pParent /*=nullptr*/)
 
 void CMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_PROGRESS1, m_progress);
-	DDX_Control(pDX, IDC_PROGRESS2, m_progress2);
-	DDX_Control(pDX, IDC_PROGRESS3, m_progress3);
+	CDialogEx::DoDataExchange(pDX);;
 	DDX_Control(pDX, IDC_STATIC_Pic, m_pic);
 	DDX_Control(pDX, IDC_STATIC_Pic2, m_pic2);
 	DDX_Control(pDX, IDC_LIST1, m_List);
 	DDX_Control(pDX, IDC_COMBO_AUDIO_TYPE, m_cmbAudioType);
 	DDX_Control(pDX, IDC_COMBO_AUDIO_TYPE2, m_cmbAudioType2);
 	DDX_Control(pDX, IDC_EDIT_CODE, m_edCode);
+	DDX_Control(pDX, IDC_COMBO_ENFOCE_BMT, m_cmbEnforceBmt);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_BUTTON1, &CMFCTestDlg::OnBnClickedButton1)
-	ON_BN_CLICKED(IDC_BUTTON2, &CMFCTestDlg::OnBnClickedButton2)
-	ON_BN_CLICKED(IDC_BUTTON3, &CMFCTestDlg::OnBnClickedButton3)
-	ON_BN_CLICKED(IDC_BUTTON_BitBlt, &CMFCTestDlg::OnBnClickedButtonBitblt)
-	ON_BN_CLICKED(IDC_BUTTON_ANIMAL, &CMFCTestDlg::OnBnClickedButtonAnimal)
-	ON_BN_CLICKED(IDC_BUTTON_DOG, &CMFCTestDlg::OnBnClickedButtonDog)
 	ON_BN_CLICKED(IDC_BUTTON_KOREAN, &CMFCTestDlg::OnBnClickedButtonKorean)
 	ON_WM_MOUSEWHEEL()
-	ON_BN_CLICKED(IDC_BUTTON_NOW, &CMFCTestDlg::OnBnClickedButtonNow)
 	ON_BN_CLICKED(IDC_BUTTON_CREATE_ENFORCE_FILE, &CMFCTestDlg::OnBnClickedButtonCreateTemsFile)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_BUTTON_SET_SETUP_DIR, &CMFCTestDlg::OnBnClickedButtonSetSetupDir)
@@ -116,7 +107,9 @@ BEGIN_MESSAGE_MAP(CMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO, &CMFCTestDlg::OnBnClickedButtonLoadAudio)
 	ON_BN_CLICKED(IDC_BUTTON_LOAD_AUDIO2, &CMFCTestDlg::OnBnClickedButtonLoadAudio2)
 	ON_BN_CLICKED(IDC_BUTTON_MAKE_ENFORCE_FILE, &CMFCTestDlg::OnBnClickedButtonMakeEnforce)
-	ON_BN_CLICKED(IDC_BUTTON_LOOP_LIST, &CMFCTestDlg::OnBnClickedButtonLoopList)
+	ON_BN_CLICKED(IDC_BUTTON_ICON, &CMFCTestDlg::OnBnClickedButtonIcon)
+	ON_BN_CLICKED(IDC_BUTTON_ICON_TRANSPARENT, &CMFCTestDlg::OnBnClickedButtonIconTransparent)
+	ON_BN_CLICKED(IDC_BUTTON_VALID_FORMAT, &CMFCTestDlg::OnBnClickedButtonValidFormat)
 END_MESSAGE_MAP()
 
 
@@ -152,11 +145,12 @@ BOOL CMFCTestDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
-	m_progress.SetRange(0, 100);
-	m_progress2.SetRange(0, 100);
-	m_progress3.SetRange(0, 100);
-	InitializeCriticalSection(&m_cs);
-	
+	Init();
+	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
+}
+
+void CMFCTestDlg::Init()
+{
 	GetDlgItem(IDC_EDIT_STRING)->SetWindowText(_T("안녕하세요"));
 
 
@@ -167,10 +161,24 @@ BOOL CMFCTestDlg::OnInitDialog()
 	GetDlgItem(IDC_EDIT_MIN)->SetWindowText(_T("1"));
 	GetDlgItem(IDC_EDIT_MAX)->SetWindowText(_T("10"));
 
+	m_cmbEnforceBmt.AddString(_T("단속파일 저장 경로: BMT"));
+	m_cmbEnforceBmt.SetItemData(0, 0);
+	m_cmbEnforceBmt.AddString(_T("단속파일 저장 경로: PASS"));
+	m_cmbEnforceBmt.SetItemData(1, 1);
+
 	GetAudioOutputDevice();
 
 	HANDLE hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
+
+	m_iPixelSize = 128;
+	m_pImageList.Create(m_iPixelSize, m_iPixelSize, ILC_COLOR32 | ILC_MASK, 0, 1);
+	//m_pImageList.SetBkColor(RGB(255, 255, 255));
+	//m_pImageList.SetBkColor(CLR_NONE);
+	if (m_pImageList.GetImageCount() == 0)
+	{
+		m_pImageList.Add(AfxGetApp()->LoadIcon(IDR_MAINFRAME));
+	}
+	//IDI_ICON_DIRECTION_STRAIGHT
 }
 
 void CMFCTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -215,93 +223,45 @@ void CMFCTestDlg::OnPaint()
 		GetClientRect(&rcClient);
 
 		CRect rcPic;
-		m_pic.GetWindowRect(&rcPic);
+		m_pic.GetWindowRect(&rcPic);	
 		ScreenToClient(&rcPic);
 
 		CPaintDC dc(this);
-		CDC* pMemDC;
+		CDC memDC;
+		memDC.CreateCompatibleDC(&dc);  // dc는 원본 화면 DC 또는 다른 CDC
+
+		CBitmap bitmap;
+		bitmap.CreateCompatibleBitmap(&dc, m_iPixelSize, m_iPixelSize);  // 비트맵 크기 설정
+		CBitmap* pOldBitmap = memDC.SelectObject(&bitmap);
+
+		CRgn rgn;
+		rgn.CreateEllipticRgn(0, 0, m_iPixelSize, m_iPixelSize);  // 타원 영역 (좌상단(50, 50), 우하단(200, 200))
+
+		memDC.SelectClipRgn(&rgn);  // 타원 영역만 그리기
+		memDC.FillSolidRect(0, 0, m_iPixelSize, m_iPixelSize, RGB(255, 0, 0));  // 빨간색으로 타원 영역 채우기
+
+		dc.SelectClipRgn(&rgn);
+		dc.BitBlt(0, 0, m_iPixelSize, m_iPixelSize, &memDC, 0, 0, SRCCOPY);
+		memDC.SelectObject(pOldBitmap);  // 원본 비트맵 복원
+	/*	CDC* pMemDC;
 		CBitmap* pOldBitmap;
 		pMemDC = new CDC;
 		pMemDC->CreateCompatibleDC(&dc);
-		CBitmap bitmap;
-		bitmap.CreateCompatibleBitmap(&dc, rcClient.Width(), rcClient.Height());
-		pOldBitmap = pMemDC->SelectObject(&bitmap);
-		bitmap.DeleteObject();
-		pMemDC->SetBkMode(TRANSPARENT);
-		pMemDC->SetStretchBltMode(COLORONCOLOR);
-		pMemDC->FillSolidRect(&rcClient, RGB(255, 255, 255));
 
-		if (m_pData)
-		{
-			BITMAPINFO bitInfo;
-			bitInfo.bmiHeader = m_bitInfoHeader;
-
-			SetStretchBltMode(pMemDC->GetSafeHdc(), COLORONCOLOR);  // set iMode.
-			StretchDIBits(pMemDC->GetSafeHdc(), rcPic.left, rcPic.top, rcPic.Width(), rcPic.Height(),
-				0, 0, bitInfo.bmiHeader.biWidth, bitInfo.bmiHeader.biHeight, m_pData, &bitInfo, DIB_RGB_COLORS, SRCCOPY);
-
-			//원본 이미지에서 이만큼을 자르고 싶다는 의미. 
-			CRect rcCrop(250, 250, 500, 500);
-
-			float fWidthRatio = (float)rcPic.Width() / (float)m_iWidth;
-			float fHeightRatio = (float)rcPic.Height() / (float)m_iHeight;
-
-			CRect rcCrop2;
-			rcCrop2.left = rcPic.left + rcCrop.left * fWidthRatio;
-			rcCrop2.right = rcPic.left + rcCrop.right * fWidthRatio;
-			rcCrop2.top = rcPic.top + rcCrop.top * fHeightRatio;
-			rcCrop2.bottom = rcPic.top + rcCrop.bottom * fHeightRatio;
-			pMemDC->Rectangle(rcCrop2);
-
-			int iWidth = rcCrop.Width();
-			int iHeight = rcCrop.Height();
-
-			int iPadding = ((iWidth * 3) % 4) == 0 ? 0 : 4 - ((iWidth * 3) % 4);
-			char* pData2 = nullptr;
-			pData2 = new char[(iWidth + iPadding) * iHeight * 3];
-
-			bitInfo.bmiHeader.biWidth = iWidth;
-			bitInfo.bmiHeader.biHeight = iHeight;
-			int iPos = 0;
-
-			if (iPadding > 0)
-			{
-				for (int i = rcCrop.top; i < rcCrop.bottom; i++)
-				{
-					memcpy(&pData2[iPos], &m_pData[(i * m_iWidth * 3) + rcCrop.left * 3], iWidth * 3);
-					iPos += iWidth * 3;
-					memset(&pData2[iPos], 0x00, iPadding);
-					iPos += iPadding;
-				}
-			}
-			else
-			{
-				for (int i = rcCrop.bottom; i < rcCrop.bottom; i++)
-				{
-					memcpy(&pData2[iPos], &m_pData[(i * m_iWidth * 3) + rcCrop.left * 3], iWidth * 3);
-					iPos += iWidth * 3;
-				}
-			}
+		CBitmap bmpDirection;
+		bmpDirection.CreateCompatibleBitmap(&dc, m_iPixelSize, m_iPixelSize);
+		pOldBitmap = pMemDC->SelectObject(&bmpDirection);
+		
+		CRgn rgn;
+		rgn.*/
 
 
-			CRect rcPic2;
-			m_pic2.GetWindowRect(&rcPic2);
-			ScreenToClient(&rcPic2);
-			SetStretchBltMode(pMemDC->GetSafeHdc(), COLORONCOLOR);  // set iMode.
-			StretchDIBits(pMemDC->GetSafeHdc(), rcPic2.left, rcPic2.top, rcPic2.Width(), rcPic2.Height(),
-				0, 0, bitInfo.bmiHeader.biWidth, bitInfo.bmiHeader.biHeight, pData2, &bitInfo, DIB_RGB_COLORS, SRCCOPY);
-			
-			CString sImageInfo;
-			sImageInfo.Format(_T("이미지 넓이: %d 높이: %d, 컨트롤 넓이: %d, 높이: %d"), m_iWidth, m_iHeight, rcPic.Width(), rcPic.Height());
-			pMemDC->DrawText(sImageInfo, rcClient, DT_BOTTOM| DT_CENTER | DT_SINGLELINE);
-		}
-
-		if (m_iDrawMode == 0)
-		{
-			dc.BitBlt(rcClient.left, rcClient.top, rcClient.Width(), rcClient.Height(), pMemDC, rcClient.left, rcClient.top, SRCCOPY);
-		}
-
-		delete pMemDC;
+		//pMemDC->FillSolidRect(0, 0, m_iPixelSize, m_iPixelSize, RGB(255, 255, 255));
+		// 
+		//m_pImageList.Draw(&dc, 0, CPoint(0, 0), ILD_TRANSPARENT);						//dc에 직접 그리는게 젤 확실 (dc에 그리기전에 비트맵을 새로 다시 그려? 근데 그러면 리소스 낭비 그릴때마다 다시 그려야함, 아이콘 객체를 가져와서 투명도 조절 후 CImageList에 저장하는 것이 맞는듯?)
+		//dc.BitBlt(rcClient.left, rcClient.top, rcClient.Width(), rcClient.Height(), pMemDC, 0, 0, SRCCOPY);
+		//pMemDC->SelectObject(pOldBitmap);
+		//delete pMemDC;
 	}
 }
 
@@ -311,126 +271,6 @@ HCURSOR CMFCTestDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
-
-
-
-void CMFCTestDlg::OnBnClickedButton1()
-{
-	std::thread t1(&CMFCTestDlg::Thread1, this);
-	t1.detach();
-
-}
-
-
-void CMFCTestDlg::OnBnClickedButton2()
-{
-	std::thread t2(&CMFCTestDlg::Thread2, this);
-	t2.detach();
-}
-
-void CMFCTestDlg::OnBnClickedButton3()
-{
-	std::thread t3(&CMFCTestDlg::Thread3, this);
-	t3.detach();
-
-}
-
-
-void CMFCTestDlg::Thread1()
-{
-	TRACE(_T("스레드1 시작\n"));
-	EnterCriticalSection(&m_cs);
-	for (int i = 0; i <= 100; i++)
-	{
-		m_progress.SetPos(i);
-		TRACE(_T("%d\n"),i);
-		Sleep(1);
-	}
-	LeaveCriticalSection(&m_cs);
-	TRACE(_T("스레드1 종료\n"));
-}
-
-void CMFCTestDlg::Thread2()
-{
-	TRACE(_T("스레드2 시작\n"));
-	for (int i = 0; i <= 100; i++)
-	{
-		m_progress2.SetPos(i);
-		TRACE(_T("%d\n"), i);
-		Sleep(1);
-	}
-	TRACE(_T("스레드2 종료\n"));
-}
-
-void CMFCTestDlg::Thread3()
-{
-
-	TRACE(_T("스레드3 시작\n"));
-	EnterCriticalSection(&m_cs);
-	for (int i = 0; i <= 100; i++)
-	{
-		m_progress.SetPos(i);
-		m_progress2.SetPos(i);
-		m_progress3.SetPos(i);
-		Sleep(1);
-		TRACE(_T("%d\n"), i);
-	}
-	LeaveCriticalSection(&m_cs);
-	TRACE(_T("스레드3 종료\n"));
-}
-
-
-
-
-void CMFCTestDlg::OnBnClickedButtonBitblt()
-{
-	CFile file;
-	if (file.Open(_T("test.bmp"), CFile::modeRead))
-	{
-		if (m_pData != nullptr)
-		{
-			delete[] m_pData;
-			m_pData = nullptr;
-		}
-		
-		file.Read(&m_bitFileHeader, sizeof(BITMAPFILEHEADER));
-		file.Read(&m_bitInfoHeader, sizeof(BITMAPINFOHEADER));
-
-		m_iWidth = m_bitInfoHeader.biWidth;
-		m_iHeight = m_bitInfoHeader.biHeight;
-
-		int iBmpSize = m_bitFileHeader.bfSize - m_bitFileHeader.bfOffBits;
-		m_pData = new char[iBmpSize];
-		file.Seek(m_bitFileHeader.bfOffBits, CFile::begin);
-		file.Read(m_pData, iBmpSize);
-		file.Close();
-		Invalidate();
-	}
-
-	m_iDrawMode = 0;
-}
-
-
-
-void CMFCTestDlg::OnBnClickedButtonAnimal()
-{
-	CAnimal animal;
-	CString str;
-	str.Format(_T("만들어진 Animal 개수: %d"),animal.GetAnimalCnt());
-	m_List.AddString(animal.m_sSay);
-	m_List.AddString(str);
-}
-
-
-void CMFCTestDlg::OnBnClickedButtonDog()
-{
-	CDog dog;
-	int iSel = m_List.AddString(dog.m_sSay);
-	m_List.SetCurSel(iSel);
-}
-
-
-
 
 void CMFCTestDlg::OnBnClickedButtonKorean()
 {
@@ -457,29 +297,6 @@ BOOL CMFCTestDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	return CDialogEx::OnMouseWheel(nFlags, zDelta, pt);
 }
-
-
-void CMFCTestDlg::OnBnClickedButtonNow()
-{
-	std::chrono::system_clock::time_point now =  std::chrono::system_clock::now();
-	std::time_t timeT = std::chrono::system_clock::to_time_t(now);
-
-	FILETIME fileTime;
-	SYSTEMTIME stTime;
-
-	//__int64 time = static_cast<__int64>(timeT) * 10000000 + 116444736000000000LL; // 1970-01-01 to 1601-01-01
-	//fileTime.dwLowDateTime = (DWORD)(time & 0xFFFFFFFF);
-	//fileTime.dwHighDateTime = (DWORD)(time >> 32);
-
-	//FileTimeToSystemTime(&fileTime, &stTime);
-	SetLocalTime(&stTime);
-	CString sTime;
-	sTime.Format(_T("형변환 없이 GetLocalTime으로 편하게 시간을 구할 수 있다. %04d.%02d.%02d %02d:%02d:%02d>"), stTime.wYear, stTime.wMonth, stTime.wDay,stTime.wHour,stTime.wMinute,stTime.wSecond);
-	int iSel = m_List.AddString(sTime);
-	m_List.SetCurSel(iSel);
-
-}
-
 
 void CMFCTestDlg::OnBnClickedButtonCreateTemsFile()
 {
@@ -1152,7 +969,7 @@ void CMFCTestDlg::CreateEnforceFileProc()
 		sExt = dlg.GetFileExt();
 		while (TRUE)
 		{	
-			DWORD dwResult = WaitForSingleObject(m_hStopEnforce, 100);
+			DWORD dwResult = WaitForSingleObject(m_hStopEnforce, 200);
 			if (dwResult == WAIT_OBJECT_0)
 			{
 				m_List.AddString(_T("ENFORCE 제출 파일 생성 스레드 종료"));
@@ -1167,7 +984,12 @@ void CMFCTestDlg::CreateEnforceFileProc()
 			GetLocalTime(&st);
 			sEnforceFileName.Format(_T("%04d%02d%02d%02d%02d%02d%03d%s.%s"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,sLane, sExt);
 
-			sCopyPath.Format(_T("D:\\ITSens\\Pass\\%s"), sEnforceFileName);
+			int iItem = m_cmbEnforceBmt.GetItemData(m_cmbEnforceBmt.GetCurSel());
+			if(iItem == 0)
+				sCopyPath.Format(_T("D:\\ITSens\\Bmt\\Pass\\%s"), sEnforceFileName);
+			else
+				sCopyPath.Format(_T("D:\\ITSens\\Pass\\%s"), sEnforceFileName);
+
 			if(CopyFile(sPath, sCopyPath, 1))
 			{
 				
@@ -1176,7 +998,11 @@ void CMFCTestDlg::CreateEnforceFileProc()
 				int iSel = m_List.AddString(sMsg);
 				m_List.SetCurSel(iSel);
 			}
-			sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sEnforceFileName);
+			if (iItem == 0)
+				sCopyPath.Format(_T("D:\\ITSens\\Bmt\\Enforce\\%s"), sEnforceFileName);
+			else
+				sCopyPath.Format(_T("D:\\ITSens\\Enforce\\%s"), sEnforceFileName);
+
 			if (CopyFile(sPath, sCopyPath, 1))
 			{
 
@@ -1521,12 +1347,125 @@ void CMFCTestDlg::OnBnClickedButtonLoadAudio2()
 
 
 
-
-void CMFCTestDlg::OnBnClickedButtonLoopList()
+void CMFCTestDlg::OnBnClickedButtonIcon()
 {
-	for (int i = 0; i < 10000; i++)
+
+}
+
+
+void CMFCTestDlg::OnBnClickedButtonIconTransparent()
+{
+	//ICONINFO iconInfo;
+	//HICON hIcon = AfxGetApp()->LoadIcon(IDI_ICON_DIRECTION_STRAIGHT);
+	//if (!GetIconInfo(hIcon, &iconInfo))
+	//	return;
+
+	//if (hIcon)
+	//{
+	//	CDC hDC = 
+	//	HDC hMemDC = CreateCompatibleDC(hDC);
+
+	//	// CImage를 아이콘 크기로 생성 (32비트 RGBA 지원)
+	//	image.Create(width, height, 32);
+	//	HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, image);
+	//}
+}
+
+bool CMFCTestDlg::ReadWavFormatFromFile(const CString& filePath, WAVEFORMATEX& outWf)
+{
+	CFile file;
+	if (!file.Open(filePath, CFile::modeRead | CFile::typeBinary))
+		return false;
+
+	DWORD chunkId = 0, chunkSize = 0, format = 0;
+	file.Read(&chunkId, 4);
+	file.Read(&chunkSize, 4);
+	file.Read(&format, 4);
+
+	if (chunkId != 'FFIR' || format != 'EVAW') // "RIFF", "WAVE"
+		return false;
+
+	while (file.GetPosition() < file.GetLength())
 	{
-		int iSel = m_List.AddString(_T("TEST"));
-		m_List.SetCurSel(iSel);
+		DWORD subChunkId = 0;
+		DWORD subChunkSize = 0;
+		file.Read(&subChunkId, 4);
+		file.Read(&subChunkSize, 4);
+
+		if (subChunkId == ' tmf') // "fmt "
+		{
+			if (subChunkSize < 16) return false; // 최소 WAVEFORMAT 크기
+
+			BYTE* pFmtBuffer = new BYTE[subChunkSize];
+			file.Read(pFmtBuffer, subChunkSize);
+
+			memcpy(&outWf, pFmtBuffer, min(subChunkSize, sizeof(WAVEFORMATEX)));
+
+			delete[] pFmtBuffer;
+			return true;
+		}
+		else
+		{
+			// 다른 chunk는 건너뜀
+			file.Seek(subChunkSize, CFile::current);
+		}
 	}
+
+	return false;
+}
+
+void CMFCTestDlg::OnBnClickedButtonValidFormat()
+{
+	CFileDialog dlg(TRUE, _T("wav"), nullptr, OFN_FILEMUSTEXIST, _T("WAV Files (*.wav)|*.wav||"));
+	if (dlg.DoModal() != IDOK)
+		return;
+
+	CString filePath = dlg.GetPathName();
+	WAVEFORMATEX wf = {};
+
+	if (!ReadWavFormatFromFile(filePath, wf))
+	{
+		AfxMessageBox(_T("WAV 파일 포맷을 읽을 수 없습니다."));
+		return;
+	}
+
+	// WASAPI 디바이스 초기화
+	CoInitialize(nullptr);
+
+	CComPtr<IMMDeviceEnumerator> pEnumerator;
+	CComPtr<IMMDevice> pDevice;
+	CComPtr<IAudioClient> pAudioClient;
+
+	HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&pEnumerator));
+	if (FAILED(hr)) { AfxMessageBox(_T("Enumerator 실패")); return; }
+
+	hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
+	if (FAILED(hr)) { AfxMessageBox(_T("오디오 디바이스 실패")); return; }
+
+	hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);
+	if (FAILED(hr)) { AfxMessageBox(_T("IAudioClient 실패")); return; }
+
+	// 지원 여부 체크
+	WAVEFORMATEX* pClosest = nullptr;
+	hr = pAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_EXCLUSIVE, &wf, &pClosest);
+
+	CString sResult;
+	if (pClosest) CoTaskMemFree(pClosest);
+
+	if (hr == S_OK)
+	{
+		sResult.Format(_T("지원됨\nSampleRate: %d Hz\nBitDepth: %d\nChannels: %d"),
+			wf.nSamplesPerSec, wf.wBitsPerSample, wf.nChannels);
+	}
+	else if (hr == S_FALSE)
+	{
+		sResult.Format(_T("유사 포맷만 지원\nSampleRate: %d Hz\nBitDepth: %d\nChannels: %d"),
+			wf.nSamplesPerSec, wf.wBitsPerSample, wf.nChannels);
+	}
+	else
+	{
+		sResult.Format(_T("지원되지 않음\nHRESULT: 0x%08X"), hr);
+	}
+
+	AfxMessageBox(sResult);
 }

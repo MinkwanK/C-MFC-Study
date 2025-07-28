@@ -32,20 +32,14 @@ protected:
 
 	// 생성된 메시지 맵 함수
 	virtual BOOL OnInitDialog();
+	void Init();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	afx_msg void OnBnClickedButton1();
-	afx_msg void OnBnClickedButton2();
-	afx_msg void OnBnClickedButton3();
-	afx_msg void OnBnClickedButtonBitblt();
-	afx_msg void OnBnClickedButtonAnimal();
-	afx_msg void OnBnClickedButtonDog();
 	afx_msg void OnBnClickedButtonKorean();
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-	afx_msg void OnBnClickedButtonNow();
 	afx_msg void OnBnClickedButtonCreateTemsFile();
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedButtonSetSetupDir();
@@ -54,9 +48,6 @@ public:
 	afx_msg void OnBnClickedButtonItagent();
 	afx_msg void OnBnClickedButtonCreateEnforceFileBoost();
 	afx_msg void OnBnClickedButtonOpenSerial();
-	void Thread1();
-	void Thread2();
-	void Thread3();
 
 	static void CreateTemsFile(CMFCTestDlg* pDlg);
 	void CreateTemsFileProc();
@@ -81,10 +72,6 @@ public:
 	void CreateEnforceFileProc();
 
 public:
-	CProgressCtrl m_progress;
-	CProgressCtrl m_progress2;
-	CRITICAL_SECTION m_cs;
-	CProgressCtrl m_progress3;
 	CStatic m_pic;
 	char* m_pData;
 	int m_iHeight;
@@ -125,5 +112,13 @@ public:
 	afx_msg void OnBnClickedButtonLoadAudio2();
 	afx_msg void OnBnClickedButtonMakeEnforce();
 	CEdit m_edCode;
-	afx_msg void OnBnClickedButtonLoopList();
+	CComboBox m_cmbEnforceBmt;
+	afx_msg void OnBnClickedButtonIcon();
+
+	CImageList m_pImageList;
+	int m_iPixelSize;
+	afx_msg void OnBnClickedButtonIconTransparent();
+	afx_msg void OnBnClickedButtonValidFormat();
+	bool ReadWavFormatFromFile(const CString& filePath, WAVEFORMATEX& outWf);
+
 };
